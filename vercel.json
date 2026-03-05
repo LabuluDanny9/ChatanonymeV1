@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "cd frontend && npm ci && npm run build",
+  "buildCommand": "cd backend && npm ci && cd ../frontend && npm ci && npm run build",
   "outputDirectory": "frontend/build",
   "framework": null,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api|_next|static|favicon|manifest|logo).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

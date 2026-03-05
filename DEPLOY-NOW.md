@@ -1,16 +1,39 @@
 # Déployer maintenant — Guide rapide
 
-## Étape 1 : Connexion Vercel
+## Tout sur Vercel (Frontend + API)
 
-```bash
-npx vercel login
-```
+### 1. Supabase — Créer la base
 
-Ouvre le lien dans le navigateur et connecte-toi avec GitHub.
+1. Va sur [supabase.com](https://supabase.com) → ton projet `drnfinkocgtfjfzcrnus`
+2. **SQL Editor** → Colle le contenu de `backend/server/scripts/init-db.sql` → **Run**
+3. **Settings** → **Database** → **Connection string** (URI) → copie l’URL complète
+
+### 2. Vercel — Variables d’environnement
+
+1. [vercel.com](https://vercel.com) → **Add New** → **Project** → Importe `ChatanonymeV1`
+2. **Settings** → **Environment Variables** → ajoute :
+
+| Variable | Valeur |
+|----------|--------|
+| `DATABASE_URL` | URL PostgreSQL Supabase (étape 1) |
+| `JWT_SECRET` | Chaîne aléatoire (ex. `openssl rand -hex 32`) |
+| `CORS_ORIGIN` | `https://ton-projet.vercel.app` (à mettre après le 1er déploiement) |
+| `ADMIN_EMAIL` | Ton email admin |
+| `ADMIN_PASSWORD` | Ton mot de passe admin |
+
+3. **Deploy**
+
+### 3. Après le déploiement
+
+- Récupère l’URL (ex. `https://chatanonyme-v1.vercel.app`)
+- Mets à jour `CORS_ORIGIN` dans Vercel avec cette URL
+- Redéploie si besoin
+
+**Note :** Les WebSockets (notifications temps réel) ne fonctionnent pas en mode serverless. Le chat reste utilisable via l’API REST.
 
 ---
 
-## Étape 2 : Backend (Railway)
+## Alternative : Backend sur Railway
 
 1. Va sur **[railway.app](https://railway.app)** → Login avec GitHub
 2. **New Project** → **Deploy from GitHub repo** → `ChatanonymeV1`
