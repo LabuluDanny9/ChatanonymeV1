@@ -8,6 +8,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
 import NotificationSocketListener from './components/NotificationSocketListener';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import Welcome from './pages/Welcome';
 import AuthPage from './pages/AuthPage';
@@ -77,17 +78,19 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider>
-          <ToastProvider>
-            <NotificationProvider>
-              <NotificationSocketListener />
-              <AppRoutes />
-            </NotificationProvider>
-          </ToastProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <NotificationProvider>
+                <NotificationSocketListener />
+                <AppRoutes />
+              </NotificationProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }

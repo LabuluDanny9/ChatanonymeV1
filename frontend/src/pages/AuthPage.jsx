@@ -4,9 +4,9 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Shield, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User, Shield, ArrowRight } from 'lucide-react';
 import AuthInput from '../components/auth/AuthInput';
 import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../context/AuthContext';
@@ -16,7 +16,6 @@ const TABS = { login: 0, signup: 1, anonymous: 2 };
 export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
   const isAdmin = mode === 'admin';
   const { loginUser, loginAdmin, registerUser, isAdmin: isLoggedAdmin } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(TABS[defaultTab] ?? TABS.login);
   const [form, setForm] = useState({
     email: '',
@@ -48,9 +47,6 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
         ? await loginAdmin(form.email.trim(), form.password)
         : await loginUser(identifier.trim(), form.password);
       setSuccess(true);
-      setTimeout(() => {
-        navigate(isAdmin ? '/admin/dashboard' : '/dashboard');
-      }, 400);
     } catch (err) {
       setError(err.response?.data?.error || 'Identifiants incorrects');
       setLoading(false);
@@ -76,7 +72,6 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
     try {
       await registerUser(form.pseudo.trim(), form.password, null, form.email?.trim() || null, null);
       setSuccess(true);
-      setTimeout(() => navigate('/dashboard'), 400);
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'inscription");
       setLoading(false);
@@ -85,26 +80,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
 
 
   if (success) {
-    return (
-      <div className="min-h-screen bg-corum-blue flex items-center justify-center">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-            className="w-20 h-20 mx-auto rounded-full bg-corum-turquoise/20 flex items-center justify-center mb-4"
-          >
-            <CheckCircle className="w-10 h-10 text-corum-turquoise" />
-          </motion.div>
-          <p className="text-corum-offwhite font-medium">Connexion réussie</p>
-          <p className="text-sm text-corum-gray mt-1">Redirection...</p>
-        </motion.div>
-      </div>
-    );
+    return <Navigate to={isAdmin ? '/admin/dashboard' : '/dashboard'} replace />;
   }
 
   return (

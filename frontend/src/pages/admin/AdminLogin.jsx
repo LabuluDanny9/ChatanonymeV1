@@ -60,6 +60,7 @@ export default function AdminLogin() {
       if (data.token && data.admin && setAdminSession) {
         setAdminSession(data.token, data.admin);
       }
+      setLoading(false);
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur lors de la création');
       setLoading(false);
