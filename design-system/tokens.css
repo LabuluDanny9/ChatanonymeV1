@@ -1,0 +1,80 @@
+/**
+ * SILENCEHUB Design Tokens — CSS Variables
+ * Dark mode par défaut, extensible light mode
+ */
+
+:root {
+  /* Primary Palette */
+  --color-primary-900: #081F2C;
+  --color-primary-800: #0B3C5D;
+  --color-primary-600: #0FA3B1;
+  --color-primary-400: #22D3EE;
+
+  /* Neutral Scale */
+  --color-neutral-900: #0B0F19;
+  --color-neutral-800: #1F2937;
+  --color-neutral-600: #4B5563;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-100: #F5F7FA;
+
+  /* Semantic */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+
+  /* Typography */
+  --font-primary: "Proxima Nova", "Inter", system-ui, sans-serif;
+
+  /* Spacing */
+  --spacing-4: 4px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-96: 96px;
+
+  /* Radius */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Elevation */
+  --elevation-1: 0 1px 3px rgba(0,0,0,0.12);
+  --elevation-2: 0 4px 12px rgba(0,0,0,0.15);
+  --elevation-3: 0 0 40px rgba(0,0,0,0.2);
+
+  /* Glass */
+  --glass-blur: 12px;
+  --glass-opacity: 0.04;
+}
+
+/* Dark mode (default) */
+[data-theme="dark"],
+:root {
+  --bg-main: var(--color-primary-800);
+  --bg-secondary: var(--color-primary-900);
+  --bg-card: var(--color-neutral-800);
+  --text-primary: var(--color-neutral-100);
+  --text-secondary: var(--color-neutral-200);
+  --text-muted: var(--color-neutral-400);
+  --border: rgba(255,255,255,0.1);
+}
+
+/* Light mode */
+[data-theme="light"] {
+  --bg-main: var(--color-neutral-100);
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: var(--color-primary-800);
+  --text-secondary: var(--color-neutral-600);
+  --text-muted: var(--color-neutral-400);
+  --border: var(--color-neutral-200);
+}

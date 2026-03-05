@@ -1,0 +1,80 @@
+{
+  "tables": {
+    "users": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "pseudo": { "type": "VARCHAR(100)", "unique": true },
+        "password_hash": { "type": "VARCHAR(255)" },
+        "phone": { "type": "VARCHAR(50)", "nullable": true },
+        "email": { "type": "VARCHAR(255)", "nullable": true },
+        "photo": { "type": "TEXT", "nullable": true },
+        "status": { "type": "VARCHAR(20)", "default": "active" },
+        "created_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "admins": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "email": { "type": "VARCHAR(255)", "unique": true },
+        "password_hash": { "type": "VARCHAR(255)" },
+        "photo": { "type": "TEXT", "default": "" },
+        "created_at": { "type": "TIMESTAMPTZ" },
+        "updated_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "conversations": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "user_id": { "type": "UUID", "references": "users(id)" },
+        "status": { "type": "VARCHAR(20)", "default": "open" },
+        "created_at": { "type": "TIMESTAMPTZ" },
+        "updated_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "messages": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "conversation_id": { "type": "UUID", "references": "conversations(id)" },
+        "sender_type": { "type": "VARCHAR(10)" },
+        "sender_id": { "type": "UUID" },
+        "content": { "type": "TEXT", "nullable": true },
+        "message_type": { "type": "VARCHAR(20)", "default": "text" },
+        "metadata": { "type": "JSONB", "default": "{}" },
+        "topic_id": { "type": "UUID", "references": "topics(id)", "nullable": true },
+        "is_read": { "type": "BOOLEAN", "default": false },
+        "deleted_at": { "type": "TIMESTAMPTZ", "nullable": true },
+        "edited_at": { "type": "TIMESTAMPTZ", "nullable": true },
+        "created_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "topics": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "title": { "type": "VARCHAR(500)" },
+        "content": { "type": "TEXT" },
+        "published_at": { "type": "TIMESTAMPTZ" },
+        "created_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "broadcasts": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "admin_id": { "type": "UUID", "references": "admins(id)" },
+        "content": { "type": "TEXT" },
+        "created_at": { "type": "TIMESTAMPTZ" }
+      }
+    },
+    "audit_logs": {
+      "columns": {
+        "id": { "type": "UUID", "primary": true },
+        "admin_id": { "type": "UUID", "references": "admins(id)", "nullable": true },
+        "action": { "type": "VARCHAR(100)" },
+        "target_type": { "type": "VARCHAR(50)", "nullable": true },
+        "target_id": { "type": "UUID", "nullable": true },
+        "details": { "type": "JSONB", "nullable": true },
+        "ip_address": { "type": "INET", "nullable": true },
+        "created_at": { "type": "TIMESTAMPTZ" }
+      }
+    }
+  }
+}

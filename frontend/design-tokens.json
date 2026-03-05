@@ -1,0 +1,28 @@
+{
+  "colors": {
+    "corum-blue": "#0B3C5D",
+    "corum-night": "#081F2C",
+    "corum-turquoise": "#0FA3B1",
+    "corum-offwhite": "#F5F7FA",
+    "corum-gray": "#E5E7EB",
+    "corum-red": "#EF4444"
+  },
+  "spacing": {
+    "section": "2rem",
+    "card": "1.5rem"
+  },
+  "radius": {
+    "sm": "0.5rem",
+    "md": "0.75rem",
+    "lg": "1rem",
+    "xl": "1.25rem",
+    "2xl": "1.5rem"
+  },
+  "transition": {
+    "duration": "300ms",
+    "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "shadow": {
+    "card": "0 8px 32px rgba(0,0,0,0.2)"
+  }
+}

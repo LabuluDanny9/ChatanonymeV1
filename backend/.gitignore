@@ -1,0 +1,10 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Data (fallback JSON store)
+data/silencehub.json

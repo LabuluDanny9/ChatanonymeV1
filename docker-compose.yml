@@ -1,0 +1,25 @@
+# ChatAnonyme / SilenceHub - Base de données PostgreSQL
+# Usage: docker compose up -d
+# Puis: cd backend && npm run init-db && npm run seed-admin
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chatanonyme-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: silencehub
+      POSTGRES_PASSWORD: silencehub_dev
+      POSTGRES_DB: silencehub
+    ports:
+      - "5432:5432"
+    volumes:
+      - chatanonyme_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U silencehub -d silencehub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  chatanonyme_pgdata:
