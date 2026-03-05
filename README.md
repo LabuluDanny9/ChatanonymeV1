@@ -154,6 +154,14 @@ WebSocket (Socket.IO) : path `/ws`, auth via `auth.token` (JWT). Événements : 
 
 ---
 
+## Déploiement
+
+- **Frontend** : Vercel — `vercel.json` configuré
+- **Backend** : Railway ou Render — `railway.json` / `render.yaml` inclus
+- **Guide complet** : voir [DEPLOYMENT.md](DEPLOYMENT.md)
+
+---
+
 ## Licence
 
 Projet à usage interne / démo. Adapter selon vos besoins.
