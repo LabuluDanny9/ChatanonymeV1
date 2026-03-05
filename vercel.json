@@ -4,7 +4,16 @@
   "outputDirectory": "frontend/build",
   "framework": null,
   "rewrites": [
-    { "source": "/((?!api|_next|static|favicon|manifest|logo).*)", "destination": "/index.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/connexion", "destination": "/index.html" },
+    { "source": "/inscription", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/index.html" },
+    { "source": "/dashboard/:path*", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/:path*", "destination": "/index.html" },
+    { "source": "/topics", "destination": "/index.html" },
+    { "source": "/topics/:path*", "destination": "/index.html" },
+    { "source": "/chat", "destination": "/index.html" }
   ],
   "headers": [
     {
