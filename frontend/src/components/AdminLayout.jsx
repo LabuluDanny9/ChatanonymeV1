@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   ChevronRight,
-  Shield,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -66,9 +65,7 @@ export default function AdminLayout() {
       <aside className="hidden lg:flex w-64 flex-col bg-white border-r border-chat-border shrink-0 shadow-sm">
         <div className="p-6 border-b border-chat-border">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" strokeWidth={1.5} />
-            </div>
+            <img src="/logo.png" alt="ChatAnonyme" className="h-10 w-auto" />
             <div>
               <h2 className="font-bold text-slate-800">ChatAnonyme</h2>
               <p className="text-xs text-chat-muted">Administration</p>

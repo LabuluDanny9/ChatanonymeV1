@@ -10,6 +10,7 @@ import { Mail, Lock, User, Shield, ArrowRight } from 'lucide-react';
 import AuthInput from '../components/auth/AuthInput';
 import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../context/AuthContext';
+import { getErrorMessage } from '../lib/api';
 
 const TABS = { login: 0, signup: 1, anonymous: 2 };
 
@@ -73,7 +74,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
       await registerUser(form.pseudo.trim(), form.password, null, form.email?.trim() || null, null);
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.error || "Erreur lors de l'inscription");
+      setError(getErrorMessage(err, "Erreur lors de l'inscription"));
       setLoading(false);
     }
   };
@@ -88,7 +89,10 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
       {/* GAUCHE — Branding (40%) */}
       <aside className="hidden lg:flex lg:w-[40%] flex-col justify-between bg-corum-night p-12 relative overflow-hidden">
         <div>
-          <h1 className="text-2xl font-bold text-chat-offwhite tracking-tight">ChatAnonyme</h1>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="ChatAnonyme" className="h-8 w-auto" />
+            <h1 className="text-2xl font-bold text-chat-offwhite tracking-tight">ChatAnonyme</h1>
+          </div>
           <p className="text-sm text-corum-gray mt-1">Plateforme sécurisée</p>
         </div>
         <div className="relative z-10">
@@ -125,7 +129,10 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
         >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <h1 className="text-xl font-bold text-chat-offwhite">ChatAnonyme</h1>
+            <div className="flex items-center gap-2 justify-center">
+              <img src="/logo.png" alt="ChatAnonyme" className="h-7 w-auto" />
+              <h1 className="text-xl font-bold text-chat-offwhite">ChatAnonyme</h1>
+            </div>
             <p className="text-xs text-corum-gray mt-1">Accès sécurisé</p>
           </div>
 

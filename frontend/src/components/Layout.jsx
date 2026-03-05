@@ -26,8 +26,9 @@ export default function Layout() {
       {/* Topbar — Desktop */}
       <header className="hidden md:block sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-chat-border shadow-sm">
         <div className="mx-auto px-4 py-3 flex items-center justify-between max-w-6xl">
-          <Link to="/" className="text-xl font-bold tracking-tight text-chat-primary hover:text-primary-dark transition-colors">
-            ChatAnonyme
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-chat-primary hover:text-primary-dark transition-colors">
+            <img src="/logo.png" alt="ChatAnonyme" className="h-8 w-auto" />
+            <span>ChatAnonyme</span>
           </Link>
           <nav className="flex gap-6 items-center">
             {navItems.map((item) => (

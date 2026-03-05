@@ -62,6 +62,14 @@ export default function Welcome() {
       </div>
 
       <div className="relative z-10 w-full max-w-2xl mx-auto px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8"
+        >
+          <img src="/logo.png" alt="ChatAnonyme" className="h-16 w-auto mx-auto" />
+        </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

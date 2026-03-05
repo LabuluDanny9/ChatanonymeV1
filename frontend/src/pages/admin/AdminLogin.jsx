@@ -6,10 +6,10 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Shield, ArrowRight, UserPlus } from 'lucide-react';
+import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import AuthInput from '../../components/auth/AuthInput';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 
 export default function AdminLogin() {
   const { loginAdmin, isAdmin, setAdminSession } = useAuth();
@@ -31,7 +31,7 @@ export default function AdminLogin() {
     try {
       await loginAdmin(form.email.trim(), form.password);
     } catch (err) {
-      setError(err.response?.data?.error || 'Identifiants incorrects');
+      setError(getErrorMessage(err, 'Identifiants incorrects'));
       setLoading(false);
     }
   };
@@ -62,7 +62,7 @@ export default function AdminLogin() {
       }
       setLoading(false);
     } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de la création');
+      setError(getErrorMessage(err, 'Erreur lors de la création'));
       setLoading(false);
     }
   };
@@ -72,12 +72,10 @@ export default function AdminLogin() {
       {/* Panneau gauche — Branding professionnel */}
       <aside className="hidden lg:flex lg:w-[45%] flex-col justify-between bg-gradient-to-br from-blue-600 to-blue-800 p-12 text-white">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Shield className="w-6 h-6" strokeWidth={1.5} />
+            <div className="flex items-center gap-2">
+              <img src="/logo.png" alt="ChatAnonyme" className="h-10 w-auto" />
+              <span className="font-bold text-xl">ChatAnonyme</span>
             </div>
-            <span className="font-bold text-xl">ChatAnonyme</span>
-          </div>
           <p className="text-blue-100 text-sm mt-2">Administration</p>
         </div>
         <div>
@@ -111,9 +109,7 @@ export default function AdminLogin() {
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" strokeWidth={1.5} />
-              </div>
+              <img src="/logo.png" alt="ChatAnonyme" className="h-10 w-auto" />
               <span className="font-bold text-xl text-slate-800">ChatAnonyme</span>
             </div>
             <p className="text-chat-muted text-sm">Administration</p>

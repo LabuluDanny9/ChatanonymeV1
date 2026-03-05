@@ -17,7 +17,6 @@ import {
   Sun,
   Menu,
   X,
-  Lock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -50,9 +49,7 @@ export default function UserDashboardLayout() {
       {/* Sidebar — Desktop */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 z-40 bg-white border-r border-chat-border shadow-sm">
         <div className="flex items-center gap-2 px-6 py-4 border-b border-chat-border">
-          <div className="w-8 h-8 rounded-lg bg-chat-primary flex items-center justify-center">
-            <Lock className="w-4 h-4 text-white" strokeWidth={1.5} />
-          </div>
+          <img src="/logo.png" alt="ChatAnonyme" className="h-8 w-auto" />
           <span className="font-bold text-slate-800">ChatAnonyme</span>
         </div>
         <nav className="flex-1 p-4 space-y-1">
@@ -121,7 +118,10 @@ export default function UserDashboardLayout() {
               className="lg:hidden fixed inset-y-0 left-0 w-72 z-50 bg-white border-r border-chat-border shadow-xl"
             >
               <div className="flex items-center justify-between p-4 border-b border-chat-border">
-                <span className="font-bold text-slate-800">ChatAnonyme</span>
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="ChatAnonyme" className="h-7 w-auto" />
+                  <span className="font-bold text-slate-800">ChatAnonyme</span>
+                </div>
                 <button onClick={() => setSidebarOpen(false)} className="p-2 text-chat-muted">
                   <X className="w-5 h-5" />
                 </button>
@@ -157,7 +157,10 @@ export default function UserDashboardLayout() {
           >
             <Menu className="w-6 h-6" />
           </button>
-          <span className="font-bold text-slate-800">ChatAnonyme</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="ChatAnonyme" className="h-7 w-auto" />
+            <span className="font-bold text-slate-800">ChatAnonyme</span>
+          </div>
           <button
             type="button"
             onClick={() => setNotificationsOpen(true)}
