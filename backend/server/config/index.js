@@ -24,7 +24,19 @@ module.exports = {
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    // Sur Vercel : accepte *.vercel.app automatiquement (front + API même domaine)
+    // CORS_ORIGIN : URL exacte ou plusieurs séparées par des virgules
+    origin: (() => {
+      const env = process.env.CORS_ORIGIN || 'http://localhost:3000';
+      const origins = env.split(',').map((o) => o.trim()).filter(Boolean).filter((o) => o.startsWith('http'));
+      if (process.env.VERCEL) {
+        return (origin, cb) => {
+          const ok = !origin || origins.includes(origin) || (origin && origin.endsWith('.vercel.app'));
+          cb(null, ok ? (origin || true) : false);
+        };
+      }
+      return origins.length ? (origins.length === 1 ? origins[0] : origins) : 'http://localhost:3000';
+    })(),
   },
   whatsapp: {
     number: process.env.ADMIN_WHATSAPP_NUMBER || '',
