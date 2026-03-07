@@ -39,84 +39,78 @@ export function AuthProvider({ children }) {
   const location = useLocation();
 
   const loginUser = useCallback(async (identifier, password) => {
-    if (supabase && !identifier.includes('@')) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${toValidEmailLocalPart(identifier)}${SUPABASE_EMAIL_DOMAIN}`,
-        password,
-      });
-      if (error) throw error;
-      const token = data.session?.access_token;
-      const userData = userFromSupabaseSession(data.session);
-      userTokenRef.current = token;
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
-      setUser(userData);
-      setAdmin(null);
-      return { type: 'user', user: userData };
-    }
-    const { data } = await api.post('/api/auth/login', { identifier, password });
-    if (data.type === 'admin') {
+    try {
+      const { data } = await api.post('/api/auth/login', { identifier, password });
+      if (data.type === 'admin') {
+        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
+        setAdmin(data.admin);
+        setUser(null);
+        return { type: 'admin', admin: data.admin };
+      }
+      userTokenRef.current = data.token;
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
-      setAdmin(data.admin);
-      setUser(null);
-      return { type: 'admin', admin: data.admin };
-    }
-    userTokenRef.current = data.token;
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
-    setUser(data.user);
-    setAdmin(null);
-    return { type: 'user', user: data.user };
-  }, []);
-
-  const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
-    const isRateLimitError = (err) => /rate limit|rate_limit|too many requests/i.test(err?.message || '');
-
-    if (supabase) {
-      try {
-        const emailLocal = toValidEmailLocalPart(pseudo);
-        const { data, error } = await supabase.auth.signUp({
-          email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
+      localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
+      setUser(data.user);
+      setAdmin(null);
+      return { type: 'user', user: data.user };
+    } catch (apiErr) {
+      if (supabase && !identifier.includes('@')) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: `${toValidEmailLocalPart(identifier)}${SUPABASE_EMAIL_DOMAIN}`,
           password,
-          options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
         });
         if (error) throw error;
-        if (!data.session) {
-          throw new Error('Vérifiez votre email pour confirmer l\'inscription. Ou désactivez "Confirm email" dans Supabase Auth.');
-        }
-        const token = data.session.access_token;
+        const token = data.session?.access_token;
         const userData = userFromSupabaseSession(data.session);
         userTokenRef.current = token;
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
         setUser(userData);
         setAdmin(null);
-        return { token, user: userData };
-      } catch (err) {
-        if (isRateLimitError(err)) {
-          try {
-            const { data } = await api.post('/api/auth/register', { pseudo, password, phone, email, photo });
-            userTokenRef.current = data.token;
-            api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-            localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
-            setUser(data.user);
-            setAdmin(null);
-            return data;
-          } catch (apiErr) {
-            throw new Error('Limite d\'inscriptions atteinte. Réessayez dans 1 heure.');
-          }
-        }
-        throw err;
+        return { type: 'user', user: userData };
       }
+      throw apiErr;
     }
-    const { data } = await api.post('/api/auth/register', { pseudo, password, phone, email, photo });
-    userTokenRef.current = data.token;
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
-    setUser(data.user);
-    setAdmin(null);
-    return data;
+  }, []);
+
+  const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
+    const payload = { pseudo, password, phone, email, photo };
+
+    try {
+      const { data } = await api.post('/api/auth/register', payload);
+      userTokenRef.current = data.token;
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
+      setUser(data.user);
+      setAdmin(null);
+      return data;
+    } catch (apiErr) {
+      if (supabase) {
+        try {
+          const emailLocal = toValidEmailLocalPart(pseudo);
+          const { data, error } = await supabase.auth.signUp({
+            email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
+            password,
+            options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
+          });
+          if (error) throw error;
+          if (!data.session) throw new Error('Inscription échouée. Réessayez dans quelques minutes.');
+          const token = data.session.access_token;
+          const userData = userFromSupabaseSession(data.session);
+          userTokenRef.current = token;
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
+          setUser(userData);
+          setAdmin(null);
+          return { token, user: userData };
+        } catch (supaErr) {
+          const msg = supaErr?.message || apiErr?.response?.data?.error || apiErr?.message;
+          throw new Error(msg || 'Inscription impossible. Réessayez plus tard.');
+        }
+      }
+      throw apiErr;
+    }
   }, []);
 
   const loginAdmin = useCallback(async (email, password) => {
