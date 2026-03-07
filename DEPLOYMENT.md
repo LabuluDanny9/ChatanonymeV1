@@ -49,6 +49,10 @@ Pour contourner les erreurs 500 à l'inscription, utilise l'authentification Sup
 
 L'inscription et la connexion passent alors directement par Supabase, sans appeler l'API.
 
+**Limite Supabase :** Par défaut, Supabase limite à ~4 inscriptions/heure (SMTP intégré). En cas de « email rate limit exceeded » :
+- **Solution 1** : Supabase → **Project Settings** → **Auth** → **SMTP** → configurer un SMTP personnalisé (Gmail, SendGrid, etc.)
+- **Solution 2** : L'app tente automatiquement l'API en secours si Supabase échoue
+
 ### Erreur « Erreur serveur » à l'inscription (sans Supabase Auth) ?
 
 1. **DATABASE_URL manquant** → Vérifie qu'elle est définie sur Vercel

@@ -71,25 +71,44 @@ export function AuthProvider({ children }) {
   }, []);
 
   const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
+    const isRateLimitError = (err) => /rate limit|rate_limit|too many requests/i.test(err?.message || '');
+
     if (supabase) {
-      const emailLocal = toValidEmailLocalPart(pseudo);
-      const { data, error } = await supabase.auth.signUp({
-        email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
-        password,
-        options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
-      });
-      if (error) throw error;
-      if (!data.session) {
-        throw new Error('Vérifiez votre email pour confirmer l\'inscription. Ou désactivez "Confirm email" dans Supabase Auth.');
+      try {
+        const emailLocal = toValidEmailLocalPart(pseudo);
+        const { data, error } = await supabase.auth.signUp({
+          email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
+          password,
+          options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          throw new Error('Vérifiez votre email pour confirmer l\'inscription. Ou désactivez "Confirm email" dans Supabase Auth.');
+        }
+        const token = data.session.access_token;
+        const userData = userFromSupabaseSession(data.session);
+        userTokenRef.current = token;
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
+        setUser(userData);
+        setAdmin(null);
+        return { token, user: userData };
+      } catch (err) {
+        if (isRateLimitError(err)) {
+          try {
+            const { data } = await api.post('/api/auth/register', { pseudo, password, phone, email, photo });
+            userTokenRef.current = data.token;
+            api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
+            setUser(data.user);
+            setAdmin(null);
+            return data;
+          } catch (apiErr) {
+            throw new Error('Limite d\'inscriptions atteinte. Réessayez dans 1 heure.');
+          }
+        }
+        throw err;
       }
-      const token = data.session.access_token;
-      const userData = userFromSupabaseSession(data.session);
-      userTokenRef.current = token;
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
-      setUser(userData);
-      setAdmin(null);
-      return { token, user: userData };
     }
     const { data } = await api.post('/api/auth/register', { pseudo, password, phone, email, photo });
     userTokenRef.current = data.token;
