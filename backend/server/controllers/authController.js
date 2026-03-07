@@ -37,9 +37,15 @@ async function register(req, res, next) {
       user: { id: user.id, pseudo: user.pseudo, phone: user.phone, email: user.email, photo: user.photo },
     });
   } catch (err) {
+    console.error('[register]', err?.message, err?.code, err?.stack);
     if (isDbConnectionError(err)) {
       return res.status(503).json({
         error: 'Base de données indisponible. Vérifiez votre connexion ou l\'état de votre projet Supabase.',
+      });
+    }
+    if (isDbSchemaError(err)) {
+      return res.status(503).json({
+        error: 'Base de données non configurée. Exécutez init-db-complet.sql dans Supabase (SQL Editor) et configurez DATABASE_URL sur Vercel.',
       });
     }
     next(err);
@@ -50,6 +56,14 @@ function isDbConnectionError(err) {
   const code = err?.code || err?.cause?.code;
   return code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ENOTFOUND'
     || err?.message?.includes('Connection terminated') || err?.message?.includes('connection timeout');
+}
+
+function isDbSchemaError(err) {
+  const code = err?.code || err?.cause?.code;
+  const msg = err?.message || '';
+  return code === '42P01' || code === 'DATABASE_URL_REQUIRED'
+    || (msg.includes('relation') && msg.includes('does not exist'))
+    || msg.includes('DATABASE_URL manquant');
 }
 
 // POST /api/auth/login - Login unifié (pseudo ou email) → retourne user ou admin
@@ -122,6 +136,11 @@ async function login(req, res, next) {
     if (isDbConnectionError(err)) {
       return res.status(503).json({
         error: 'Base de données indisponible. Vérifiez votre connexion ou l\'état de votre projet Supabase.',
+      });
+    }
+    if (isDbSchemaError(err)) {
+      return res.status(503).json({
+        error: 'Base de données non configurée. Exécutez init-db-complet.sql dans Supabase (SQL Editor) et configurez DATABASE_URL sur Vercel.',
       });
     }
     next(err);

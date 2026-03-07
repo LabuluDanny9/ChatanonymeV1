@@ -10,11 +10,23 @@ const fs = require('fs');
 
 const dbUrl = process.env.DATABASE_URL || '';
 // Supabase/PostgreSQL quand DATABASE_URL est défini. JSON en fallback si vide ou json:
-const useJson = !dbUrl || dbUrl.startsWith('json:');
+// Sur Vercel (serverless), le mode JSON échoue (filesystem read-only) → exiger DATABASE_URL
+const isVercel = !!process.env.VERCEL;
+const useJson = !isVercel && (!dbUrl || dbUrl.startsWith('json:'));
 
 let db;
 
-if (useJson) {
+if (isVercel && !dbUrl) {
+  // Vercel sans DATABASE_URL : échec explicite au lieu d'erreur cryptique
+  const err = new Error(
+    'DATABASE_URL manquant sur Vercel. Configurez-la dans Vercel > Settings > Environment Variables. ' +
+    'Utilisez l\'URL PostgreSQL de Supabase (port 6543 recommandé pour le pooler).'
+  );
+  err.code = 'DATABASE_URL_REQUIRED';
+  db = {
+    query: async () => { throw err; },
+  };
+} else if (useJson) {
   const dbPath = dbUrl.startsWith('json:')
     ? path.resolve(dbUrl.replace('json:', '').trim())
     : path.join(__dirname, '../../data/silencehub.json');

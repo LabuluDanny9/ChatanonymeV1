@@ -42,6 +42,37 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'silencehub' }));
 
+// Diagnostic DB - pour identifier les erreurs d'inscription en production
+app.get('/api/health-db', async (req, res) => {
+  try {
+    const { pool } = require('./config/database');
+    const hasUrl = !!process.env.DATABASE_URL;
+    const isVercel = !!process.env.VERCEL;
+    const result = await pool.query('SELECT 1 as ok');
+    const usersCheck = await pool.query('SELECT COUNT(*)::int as c FROM users');
+    return res.json({
+      status: 'ok',
+      database: 'connected',
+      hasDatabaseUrl: hasUrl,
+      isVercel,
+      usersCount: usersCheck?.rows?.[0]?.c ?? 0,
+    });
+  } catch (err) {
+    console.error('[health-db]', err);
+    return res.status(503).json({
+      status: 'error',
+      database: 'failed',
+      error: err?.message || String(err),
+      code: err?.code,
+      hint: !process.env.DATABASE_URL
+        ? 'DATABASE_URL manquant sur Vercel'
+        : err?.message?.includes('does not exist')
+          ? 'Exécutez init-db-complet.sql dans Supabase SQL Editor'
+          : 'Vérifiez DATABASE_URL (pooler port 6543 recommandé)',
+    });
+  }
+});
+
 // Accès direct à la racine — redirection vers le frontend
 app.get('/', (req, res) =>
   res.status(200).json({

@@ -2,15 +2,48 @@
 
 ## Architecture
 
-- **Frontend** (React) → Vercel
-- **Backend** (Node.js/Express) → Railway ou Render
-- **Base de données** → Supabase (PostgreSQL) ou JSON local
+- **Frontend** (React) + **API** (Express serverless) → Vercel (tout-en-un)
+- **Backend** (Node.js/Express) → Railway ou Render (optionnel, architecture séparée)
+- **Base de données** → Supabase (PostgreSQL)
 
 ---
 
-## Ordre recommandé
+## Déploiement tout-en-un sur Vercel (recommandé)
 
-1. **Supabase** : créer la base et exécuter `init-db.sql`
+### 1. Créer les tables dans Supabase (OBLIGATOIRE)
+
+1. Va sur [supabase.com](https://supabase.com) → ton projet
+2. **SQL Editor** → **New query**
+3. Copie-colle le contenu de `backend/server/scripts/init-db-complet.sql`
+4. Clique **Run** — les tables `users`, `admins`, `conversations`, etc. seront créées
+
+### 2. Variables d'environnement sur Vercel
+
+Dans **Vercel** → ton projet → **Settings** → **Environment Variables**, ajoute :
+
+| Variable | Valeur | Obligatoire |
+|----------|--------|-------------|
+| `DATABASE_URL` | URL PostgreSQL Supabase (voir ci-dessous) | **Oui** |
+| `JWT_SECRET` | Chaîne aléatoire sécurisée (ex. `openssl rand -hex 32`) | **Oui** |
+| `CORS_ORIGIN` | URL de ton frontend (ex. `https://ton-projet.vercel.app`) | Oui |
+
+**Obtenir DATABASE_URL :** Supabase → **Settings** → **Database** → **Connection string** → **URI**. Pour Vercel (serverless), utilise le **Connection pooler** (port **6543**) plutôt que 5432.
+
+### 3. Redéployer
+
+Après avoir ajouté les variables, **Redeploy** le projet sur Vercel.
+
+### Erreur « Erreur serveur » à l'inscription ?
+
+1. **DATABASE_URL manquant** → Vérifie qu'elle est définie sur Vercel (Production, Preview, Development)
+2. **Tables absentes** → Exécute `init-db-complet.sql` dans Supabase SQL Editor
+3. **Connexion refusée** → Utilise l'URL du **pooler** (port 6543) plutôt que 5432
+
+---
+
+## Ordre recommandé (architecture séparée)
+
+1. **Supabase** : créer la base et exécuter `init-db-complet.sql`
 2. **Backend** : déployer sur Railway ou Render
 3. **Frontend** : déployer sur Vercel avec l’URL du backend
 
@@ -78,7 +111,7 @@ Utilise **Supabase** (PostgreSQL) :
 
 1. Crée un projet sur [supabase.com](https://supabase.com)
 2. Récupère l’URL de connexion (Settings → Database)
-3. Exécute `backend/server/scripts/init-db.sql` dans le SQL Editor
+3. Exécute `backend/server/scripts/init-db-complet.sql` dans le SQL Editor
 4. Définis `DATABASE_URL` dans Railway/Render
 
 ---
