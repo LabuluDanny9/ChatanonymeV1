@@ -361,7 +361,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                       </div>
                       <AuthInput
                         label="Pseudo"
-                        placeholder="Ex : Écouteur2024, LunaSage42..."
+                        placeholder="Lettres, chiffres, tirets uniquement (ex: LunaSage42)"
                         value={form.pseudo}
                         onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value }))}
                         required

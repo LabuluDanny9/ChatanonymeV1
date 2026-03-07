@@ -13,6 +13,14 @@ const STORAGE_USER = 'chatanonyme_user';
 const STORAGE_ADMIN = 'chatanonyme_admin';
 const SUPABASE_EMAIL_DOMAIN = '@users.laparte.app';
 
+/** Convertit le pseudo en partie locale valide pour email (a-z, 0-9, ., _, -) */
+function toValidEmailLocalPart(pseudo) {
+  const s = String(pseudo || '').trim();
+  const normalized = s.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const safe = normalized.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return safe || 'user';
+}
+
 const AuthContext = createContext(null);
 
 function userFromSupabaseSession(session) {
@@ -33,7 +41,7 @@ export function AuthProvider({ children }) {
   const loginUser = useCallback(async (identifier, password) => {
     if (supabase && !identifier.includes('@')) {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${identifier}${SUPABASE_EMAIL_DOMAIN}`,
+        email: `${toValidEmailLocalPart(identifier)}${SUPABASE_EMAIL_DOMAIN}`,
         password,
       });
       if (error) throw error;
@@ -64,8 +72,9 @@ export function AuthProvider({ children }) {
 
   const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
     if (supabase) {
+      const emailLocal = toValidEmailLocalPart(pseudo);
       const { data, error } = await supabase.auth.signUp({
-        email: `${pseudo.trim()}${SUPABASE_EMAIL_DOMAIN}`,
+        email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
         password,
         options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
       });
