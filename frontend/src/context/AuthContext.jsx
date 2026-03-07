@@ -19,7 +19,8 @@ function userFromSupabaseSession(session) {
   if (!session?.user) return null;
   const u = session.user;
   const pseudo = u.user_metadata?.pseudo || u.email?.split('@')[0] || 'user';
-  return { id: u.id, pseudo, phone: null, email: u.email, photo: u.user_metadata?.photo || null };
+  const email = u.user_metadata?.email || null;
+  return { id: u.id, pseudo, phone: null, email, photo: u.user_metadata?.photo || null };
 }
 
 export function AuthProvider({ children }) {
@@ -66,7 +67,7 @@ export function AuthProvider({ children }) {
       const { data, error } = await supabase.auth.signUp({
         email: `${pseudo.trim()}${SUPABASE_EMAIL_DOMAIN}`,
         password,
-        options: { data: { pseudo: pseudo.trim(), photo: photo || null } },
+        options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
       });
       if (error) throw error;
       if (!data.session) {

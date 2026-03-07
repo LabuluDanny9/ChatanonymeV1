@@ -19,7 +19,7 @@ DECLARE
   v_email TEXT;
 BEGIN
   v_pseudo := COALESCE(NEW.raw_user_meta_data->>'pseudo', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8));
-  v_email := NEW.email;
+  v_email := NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'email', '')), '');
   
   INSERT INTO public.users (id, pseudo, password_hash, phone, email, photo, status)
   VALUES (

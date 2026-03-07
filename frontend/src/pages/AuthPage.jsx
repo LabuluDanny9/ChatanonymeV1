@@ -42,6 +42,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
     avatar: AVATAR_OPTIONS[0],
     remember: false,
     acceptPrivacy: false,
+    signupEmail: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -92,7 +93,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
     }
     setLoading(true);
     try {
-      await registerUser(form.pseudo.trim(), form.password, null, null, form.avatar || null);
+      await registerUser(form.pseudo.trim(), form.password, null, form.signupEmail?.trim() || null, form.avatar || null);
       setSuccess(true);
     } catch (err) {
       setError(getErrorMessage(err, "Erreur lors de l'inscription"));
@@ -366,6 +367,14 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                         required
                       />
                     </div>
+                    <AuthInput
+                      type="email"
+                      label="Adresse email"
+                      placeholder="votre@email.com"
+                      value={form.signupEmail}
+                      onChange={(e) => setForm((f) => ({ ...f, signupEmail: e.target.value }))}
+                      required
+                    />
                     <p className="text-xs text-corum-gray -mt-2">
                       <strong>Important :</strong> Votre pseudo ne doit rien avoir en commun avec votre nom, prénom ou toute indication de votre identité. Choisissez un pseudonyme totalement fictif pour préserver votre anonymat.
                     </p>
@@ -389,8 +398,8 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                     {/* Politique de confidentialité */}
                     <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
                       <p className="text-sm text-corum-offwhite leading-relaxed">
-                        <strong>Politique de confidentialité — Anonymat total</strong><br />
-                        En vous inscrivant sur cette plateforme, vous restez totalement anonyme. Nous ne collectons aucune donnée personnelle vous concernant (nom, prénom, email, téléphone, adresse). L'objectif est de vous permettre de vous exprimer librement, sans crainte, et de vous sentir à l'aise pour partager vos préoccupations en toute confidentialité.
+                        <strong>Politique de confidentialité — Anonymat</strong><br />
+                        Votre pseudo reste anonyme. L'email sert uniquement à la récupération de compte. Pour la connexion, vous utiliserez votre pseudo et mot de passe (pas l'email). L'objectif est de vous permettre de vous exprimer librement, sans crainte.
                       </p>
                       <label className="flex items-start gap-3 cursor-pointer">
                         <input
