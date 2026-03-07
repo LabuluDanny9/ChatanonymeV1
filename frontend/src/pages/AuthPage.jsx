@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Shield, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Shield, ArrowRight, Shuffle } from 'lucide-react';
 import AuthInput from '../components/auth/AuthInput';
 import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,21 @@ import { getErrorMessage } from '../lib/api';
 
 const TABS = { login: 0, signup: 1, anonymous: 2 };
 
-const AVATAR_OPTIONS = ['😊', '🎭', '🌟', '🔒', '🦋', '🌙', '🌸', '🦊', '🌈', '🦉', '🌻', '🐱'];
+const AVATAR_OPTIONS = [
+  '😊', '🎭', '🌟', '🔒', '🦋', '🌙', '🌸', '🦊', '🌈', '🦉', '🌻', '🐱',
+  '🦄', '🐺', '🦅', '🌺', '🌊', '🔥', '⚡', '💫', '🪷', '🦩', '🐢', '🦎',
+  '🌵', '🍀', '🌻', '🌼', '🦢', '🐝', '🦜', '🐬', '🦭', '🦋', '🪲', '🦗',
+];
+
+const PSEUDO_ADJECTIFS = ['Écho', 'Luna', 'Ombre', 'Sage', 'Vif', 'Calme', 'Secret', 'Lumineux', 'Noir', 'Bleu', 'Rouge', 'Vert', 'Serein', 'Mystère', 'Aurore', 'Crépuscule'];
+const PSEUDO_SUBSTANTIFS = ['Écouteur', 'Pensée', 'Voyageur', 'Rêveur', 'Sagesse', 'Étoile', 'Onde', 'Flux', 'Souffle', 'Murmure', 'Silence', 'Horizon', 'Reflet', 'Miroir', 'Passage', 'Étincelle'];
+
+function genererPseudo() {
+  const adj = PSEUDO_ADJECTIFS[Math.floor(Math.random() * PSEUDO_ADJECTIFS.length)];
+  const sub = PSEUDO_SUBSTANTIFS[Math.floor(Math.random() * PSEUDO_SUBSTANTIFS.length)];
+  const num = Math.floor(Math.random() * 999) + 1;
+  return `${adj}${sub}${num}`;
+}
 
 export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
   const isAdmin = mode === 'admin';
@@ -99,7 +113,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
           <motion.img
             src="/logo.png"
             alt="L'Aparté"
-            className="h-48 sm:h-56 md:h-64 w-auto drop-shadow-2xl mb-8"
+            className="h-56 sm:h-64 md:h-72 lg:h-80 w-auto drop-shadow-2xl mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -149,7 +163,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
         >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <img src="/logo.png" alt="L'Aparté" className="h-28 sm:h-36 w-auto mx-auto drop-shadow-lg mb-4" />
+            <img src="/logo.png" alt="L'Aparté" className="h-36 sm:h-44 w-auto mx-auto drop-shadow-lg mb-4" />
             <h1 className="text-xl font-bold text-chat-offwhite mb-1">Bienvenue dans L'Aparté</h1>
             <p className="text-sm text-corum-gray">Par quoi voulez-vous commencer ?</p>
           </div>
@@ -314,13 +328,13 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                     )}
                     <div>
                       <p className="text-sm text-corum-offwhite mb-2">Choisir un avatar</p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1">
                         {AVATAR_OPTIONS.map((emoji) => (
                           <button
                             key={emoji}
                             type="button"
                             onClick={() => setForm((f) => ({ ...f, avatar: emoji }))}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all shrink-0 ${
                               form.avatar === emoji
                                 ? 'bg-corum-turquoise/30 border-2 border-corum-turquoise'
                                 : 'bg-white/5 border border-white/10 hover:border-corum-turquoise/50'
@@ -331,13 +345,27 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                         ))}
                       </div>
                     </div>
-                    <AuthInput
-                      label="Choisir un pseudo"
-                      placeholder="Ex : Écouteur2024, Anonyme123..."
-                      value={form.pseudo}
-                      onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value }))}
-                      required
-                    />
+                    <div>
+                      <div className="flex justify-end mb-1">
+                        <motion.button
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, pseudo: genererPseudo() }))}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="flex items-center gap-1.5 text-xs text-corum-turquoise hover:text-corum-turquoise/80 transition-colors"
+                        >
+                          <Shuffle className="w-3.5 h-3.5" />
+                          Générer un pseudo
+                        </motion.button>
+                      </div>
+                      <AuthInput
+                        label="Pseudo"
+                        placeholder="Ex : Écouteur2024, LunaSage42..."
+                        value={form.pseudo}
+                        onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value }))}
+                        required
+                      />
+                    </div>
                     <p className="text-xs text-corum-gray -mt-2">
                       <strong>Important :</strong> Votre pseudo ne doit rien avoir en commun avec votre nom, prénom ou toute indication de votre identité. Choisissez un pseudonyme totalement fictif pour préserver votre anonymat.
                     </p>
