@@ -8,38 +8,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { Send, Lock, X, User, Ban, Search, Trash2, Menu, ChevronRight, MessageCircle, Mic, Paperclip, Smile } from 'lucide-react';
 import api from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import ChatBubble from '../../components/ChatBubble';
 import VoiceRecorder from '../../components/chat/VoiceRecorder';
 import AttachmentPicker from '../../components/chat/AttachmentPicker';
 import EmojiPicker from 'emoji-picker-react';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-const WS_PATH = process.env.REACT_APP_WS_PATH || '/ws';
+import { SOCKET_API_URL, getSocketOptions } from '../../lib/socketConfig';
 
 const statusLabels = { open: 'Ouverte', closed: 'Fermée', banned: 'Banni', active: 'Actif' };
-const statusColors = { open: 'text-emerald-600', closed: 'text-slate-500', banned: 'text-red-600', active: 'text-emerald-600' };
+const statusColors = { open: 'text-admin-success', closed: 'text-admin-muted', banned: 'text-admin-danger', active: 'text-admin-success' };
 
 function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="rounded-xl bg-white border border-chat-border shadow-xl p-6 max-w-md w-full"
+        className="rounded-2xl bg-admin-card border border-admin-border shadow-admin-glow p-6 max-w-md w-full"
       >
-        <h3 className="text-lg font-semibold text-slate-800 mb-2">{title}</h3>
-        <p className="text-sm text-chat-muted mb-6">{message}</p>
+        <h3 className="text-lg font-semibold text-admin-text mb-2">{title}</h3>
+        <p className="text-sm text-admin-muted mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <motion.button
             type="button"
             onClick={onCancel}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium"
+            className="px-4 py-2 rounded-xl bg-admin-surface text-admin-muted hover:bg-admin-border font-medium"
           >
             Annuler
           </motion.button>
@@ -48,7 +48,7 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
             onClick={onConfirm}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700"
+            className="px-4 py-2 rounded-xl bg-admin-danger text-white font-medium hover:bg-admin-danger/90"
           >
             Confirmer
           </motion.button>
@@ -59,6 +59,7 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
 }
 
 export default function AdminConversations() {
+  const { admin } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -109,7 +110,7 @@ export default function AdminConversations() {
 
   useEffect(() => {
     if (!token) return;
-    const socket = io(API_URL, { path: WS_PATH, auth: { token } });
+    const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socket.on('message:new', (payload) => {
       if (payload.conversationId === selected?.id) {
         setMessages((prev) => [...prev, payload.message]);
@@ -299,32 +300,32 @@ export default function AdminConversations() {
   if (loading) {
     return (
       <div className="h-[calc(100vh-6rem)] flex">
-        <div className="w-[300px] bg-slate-100 animate-pulse rounded-r-xl" />
+        <div className="w-[300px] bg-admin-surface animate-pulse rounded-r-xl" />
         <div className="flex-1 p-6 flex items-center justify-center">
-          <div className="animate-pulse text-chat-muted">Chargement...</div>
+          <div className="animate-pulse text-admin-muted">Chargement...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-10rem)] flex overflow-hidden rounded-xl border border-chat-border bg-white shadow-sm">
+    <div className="h-[calc(100vh-10rem)] flex overflow-hidden rounded-2xl border border-admin-border bg-admin-card/30 backdrop-blur-sm shadow-admin-card">
       {/* 1️⃣ COLONNE GAUCHE — Liste conversations (300px) */}
       <aside
-        className={`shrink-0 w-[300px] bg-slate-50 border-r border-chat-border flex flex-col ${
+        className={`shrink-0 w-[300px] bg-admin-surface/50 border-r border-admin-border flex flex-col ${
           showListMobile ? 'fixed inset-y-0 left-0 z-40 lg:relative' : 'hidden lg:flex'
         }`}
       >
-        <div className="p-4 border-b border-chat-border">
+        <div className="p-4 border-b border-admin-border">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" strokeWidth={1.5} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-admin-muted" strokeWidth={1.5} />
             <input
               ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher (⌘K)"
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-chat-border text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-admin-card border border-admin-border text-admin-text placeholder-admin-muted text-sm focus:outline-none focus:ring-2 focus:ring-admin-purple/50 focus:border-admin-purple"
             />
           </div>
         </div>
@@ -337,30 +338,30 @@ export default function AdminConversations() {
               initial={false}
               animate={{ x: selected?.id === c.id ? 4 : 0 }}
               transition={{ duration: 0.2 }}
-              className={`w-full text-left px-4 py-3 border-b border-chat-border hover:bg-slate-100 transition-colors duration-200 ${
-                selected?.id === c.id ? 'bg-blue-50 border-l-2 border-l-blue-600' : ''
+              className={`w-full text-left px-4 py-3 border-b border-admin-border hover:bg-admin-card/50 transition-colors duration-200 ${
+                selected?.id === c.id ? 'bg-admin-purple/10 border-l-2 border-l-admin-purple' : ''
               }`}
             >
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-slate-800 truncate flex-1">
+                <p className="text-sm font-medium text-admin-text truncate flex-1">
                   {c.pseudo || c.anonymous_id || c.id?.slice(0, 8) || '—'}
                 </p>
                 {unreadMap[c.id] > 0 && (
                   <motion.span
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="shrink-0 min-w-[18px] h-[18px] rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center"
+                    className="shrink-0 min-w-[18px] h-[18px] rounded-full bg-admin-purple text-white text-xs font-bold flex items-center justify-center"
                   >
                     {unreadMap[c.id]}
                   </motion.span>
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-xs ${statusColors[c.user_status] || statusColors[c.status] || 'text-slate-500'}`}>
+                <span className={`text-xs ${statusColors[c.user_status] || statusColors[c.status] || 'text-admin-muted'}`}>
                   {c.user_status === 'banned' ? statusLabels.banned : (statusLabels[c.status] || c.status)}
                 </span>
-                <span className="text-xs text-slate-400">•</span>
-                <span className="text-xs text-slate-500">{formatDate(c.updated_at)}</span>
+                <span className="text-xs text-admin-muted">•</span>
+                <span className="text-xs text-admin-muted">{formatDate(c.updated_at)}</span>
               </div>
             </motion.button>
           ))}
@@ -372,16 +373,16 @@ export default function AdminConversations() {
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setShowListMobile(false)} aria-hidden />
       )}
 
-      {/* 2️⃣ ZONE CENTRALE — Chat (style unifié chat-*) */}
-      <main className="flex-1 flex flex-col min-w-0 bg-chat-bg">
+      {/* 2️⃣ ZONE CENTRALE — Chat (style WhatsApp/Discord) */}
+      <main className="flex-1 flex flex-col min-w-0 bg-admin-bg/50">
         {!selected ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-chat-muted p-6">
+          <div className="flex-1 flex flex-col items-center justify-center text-admin-muted p-6">
             <MessageCircle className="w-16 h-16 mb-4 opacity-30" strokeWidth={1} />
             <p className="text-center">Sélectionnez une conversation</p>
             <button
               type="button"
               onClick={() => setShowListMobile(true)}
-              className="mt-4 lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-100 text-blue-600"
+              className="mt-4 lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl bg-admin-purple/20 text-admin-purple"
             >
               <Menu className="w-4 h-4" /> Ouvrir la liste
             </button>
@@ -389,32 +390,52 @@ export default function AdminConversations() {
         ) : (
           <>
             {/* Topbar */}
-            <div className="shrink-0 px-4 py-3 border-b border-chat-border flex items-center justify-between gap-4 bg-chat-surface/80">
+            <div className="shrink-0 px-4 py-3 border-b border-admin-border flex items-center justify-between gap-4 bg-admin-surface/80 backdrop-blur-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   type="button"
                   onClick={() => setShowListMobile(true)}
-                  className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                  className="lg:hidden p-2 rounded-lg text-admin-muted hover:bg-admin-card"
                 >
                   <ChevronRight className="w-5 h-5 rotate-180" />
                 </button>
+                {(selected?.photo && selected.photo.trim().length <= 4) ? (
+                  <div className="w-10 h-10 rounded-xl bg-admin-purple/20 flex items-center justify-center text-xl shrink-0">
+                    {selected.photo}
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-admin-card flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-admin-muted" strokeWidth={1.5} />
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-800 truncate">
+                  <p className="font-medium text-admin-text truncate">
                     {selected.pseudo || selected.anonymous_id || selected.id?.slice(0, 8) || 'Anonyme'}
                   </p>
-                  <p className={`text-xs ${statusColors[selected.status] || 'text-slate-500'}`}>
+                  <p className={`text-xs ${statusColors[selected.status] || 'text-admin-muted'}`}>
                     {statusLabels[selected.status] || selected.status}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                {admin?.photo && (
+                  <div className="w-9 h-9 rounded-xl bg-admin-purple/20 flex items-center justify-center overflow-hidden border border-admin-border" title="Vous">
+                    {admin.photo.startsWith('http') ? (
+                      <img src={admin.photo} alt="" className="w-full h-full object-cover" />
+                    ) : admin.photo.trim().length <= 4 ? (
+                      <span className="text-lg">{admin.photo}</span>
+                    ) : (
+                      <User className="w-5 h-5 text-admin-purple" strokeWidth={1.5} />
+                    )}
+                  </div>
+                )}
                 {selected.status === 'open' && (
                   <motion.button
                     type="button"
                     onClick={handleClose}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                    className="p-2 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-card"
                     title="Fermer"
                   >
                     <Lock className="w-4 h-4" />
@@ -426,7 +447,7 @@ export default function AdminConversations() {
                     onClick={handleBan}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50"
+                    className="p-2 rounded-lg text-admin-muted hover:text-admin-danger hover:bg-admin-danger/20"
                     title="Bannir"
                   >
                     <Ban className="w-4 h-4" />
@@ -435,15 +456,15 @@ export default function AdminConversations() {
                 <button
                   type="button"
                   onClick={() => setShowInfoPanel(!showInfoPanel)}
-                  className="hidden lg:flex p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+                  className="hidden lg:flex p-2 rounded-lg text-admin-muted hover:bg-admin-card"
                 >
                   <User className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Messages — style unifié chat-* */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-chat-bg/60 to-chat-bg/30">
+            {/* Messages — style WhatsApp/Discord */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gradient-to-b from-admin-bg/50 to-admin-surface/30">
               {messages.filter((m) => !m.deleted_at).map((m) => (
                 <motion.div
                   key={m.id}
@@ -459,6 +480,8 @@ export default function AdminConversations() {
                       isRead={m.is_read}
                       createdAt={m.created_at}
                       variant="admin"
+                      userAvatar={m.sender_type === 'user' ? selected?.photo : undefined}
+                      adminAvatar={m.sender_type === 'admin' ? admin?.photo : undefined}
                       onDelete={handleDeleteMessage}
                       onEdit={handleEditMessage}
                       canDelete
@@ -473,18 +496,18 @@ export default function AdminConversations() {
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="px-4 py-3 rounded-2xl bg-white/10 flex items-center gap-2 border border-chat-border">
+                  <div className="px-4 py-3 rounded-2xl bg-admin-card/50 flex items-center gap-2 border border-admin-border">
                     <span className="flex gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.span
                           key={i}
                           animate={{ opacity: [0.4, 1, 0.4] }}
                           transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-                          className="w-2 h-2 rounded-full bg-chat-accent"
+                          className="w-2 h-2 rounded-full bg-admin-purple"
                         />
                       ))}
                     </span>
-                    <span className="text-xs text-chat-muted">Utilisateur en train d'écrire...</span>
+                    <span className="text-xs text-admin-muted">Utilisateur en train d'écrire...</span>
                   </div>
                 </motion.div>
               )}
@@ -498,9 +521,9 @@ export default function AdminConversations() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden border-t border-chat-border"
+                  className="overflow-hidden border-t border-admin-border"
                 >
-                  <div className="p-4 bg-chat-surface/60">
+                  <div className="p-4 bg-admin-surface/60">
                     <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setShowVoice(false)} />
                   </div>
                 </motion.div>
@@ -510,9 +533,9 @@ export default function AdminConversations() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden border-t border-chat-border"
+                  className="overflow-hidden border-t border-admin-border"
                 >
-                  <div className="p-4 bg-chat-surface/60">
+                  <div className="p-4 bg-admin-surface/60">
                     <AttachmentPicker onSelect={handleAttachSelect} onClose={() => setShowAttach(false)} />
                   </div>
                 </motion.div>
@@ -533,9 +556,9 @@ export default function AdminConversations() {
               )}
             </AnimatePresence>
 
-            {/* Input zone — style unifié chat-* */}
+            {/* Input zone — style WhatsApp/Discord */}
             {selected.status === 'open' && (
-              <div className="relative shrink-0 bg-chat-surface backdrop-blur-xl border-t border-chat-border">
+              <div className="relative shrink-0 bg-admin-surface/80 backdrop-blur-xl border-t border-admin-border">
                 <form onSubmit={(e) => handleReply(e)} className="p-4">
                   <div className="flex gap-2 sm:gap-3 items-end">
                     <div className="flex items-center gap-1 shrink-0">
@@ -545,7 +568,7 @@ export default function AdminConversations() {
                         onClick={() => { setShowAttach(false); setShowVoice(false); setShowEmoji(!showEmoji); }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`p-2.5 rounded-xl transition-colors ${showEmoji ? 'text-blue-600 bg-blue-50' : 'text-chat-muted hover:text-blue-600 hover:bg-blue-50/50'}`}
+                        className={`p-2.5 rounded-xl transition-colors ${showEmoji ? 'text-admin-purple bg-admin-purple/20' : 'text-admin-muted hover:text-admin-purple hover:bg-admin-purple/10'}`}
                         title="Emoji"
                       >
                         <Smile className="w-5 h-5" strokeWidth={1.5} />
@@ -555,7 +578,7 @@ export default function AdminConversations() {
                         onClick={() => { setShowVoice(false); setShowEmoji(false); setShowAttach(!showAttach); }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-blue-600 bg-blue-50' : 'text-chat-muted hover:text-blue-600 hover:bg-blue-50/50'}`}
+                        className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-admin-purple bg-admin-purple/20' : 'text-admin-muted hover:text-admin-purple hover:bg-admin-purple/10'}`}
                         title="Pièce jointe"
                       >
                         <Paperclip className="w-5 h-5" strokeWidth={1.5} />
@@ -565,7 +588,7 @@ export default function AdminConversations() {
                         onClick={() => { setShowAttach(false); setShowEmoji(false); setShowVoice(!showVoice); }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-blue-600 bg-blue-50' : 'text-chat-muted hover:text-blue-600 hover:bg-blue-50/50'}`}
+                        className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-admin-purple bg-admin-purple/20' : 'text-admin-muted hover:text-admin-purple hover:bg-admin-purple/10'}`}
                         title="Message vocal"
                       >
                         <Mic className="w-5 h-5" strokeWidth={1.5} />
@@ -585,7 +608,7 @@ export default function AdminConversations() {
                         placeholder="Répondre... (⌘↵ envoyer)"
                         rows={1}
                         disabled={sending}
-                        className="w-full min-h-[44px] max-h-32 rounded-xl bg-slate-50 border border-chat-border px-4 py-3 text-slate-800 placeholder-chat-muted focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all duration-300 resize-none"
+                        className="w-full min-h-[44px] max-h-32 rounded-xl bg-admin-card border border-admin-border px-4 py-3 text-admin-text placeholder-admin-muted focus:outline-none focus:ring-2 focus:ring-admin-purple/50 focus:border-admin-purple transition-all duration-300 resize-none"
                         maxLength={2000}
                       />
                     </div>
@@ -594,12 +617,12 @@ export default function AdminConversations() {
                       disabled={sending || !reply.trim()}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="p-3 rounded-xl bg-blue-600 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all hover:bg-blue-700"
+                      className="p-3 rounded-xl bg-admin-purple text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all hover:bg-admin-purple/90"
                     >
                       <Send className="w-5 h-5" />
                     </motion.button>
                   </div>
-                  <p className="text-xs text-chat-muted mt-2 ml-1">{reply.length}/2000</p>
+                  <p className="text-xs text-admin-muted mt-2 ml-1">{reply.length}/2000</p>
                 </form>
               </div>
             )}
@@ -615,15 +638,15 @@ export default function AdminConversations() {
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="hidden lg:flex shrink-0 flex-col bg-slate-50 border-l border-chat-border overflow-hidden"
+            className="hidden lg:flex shrink-0 flex-col bg-admin-surface/50 border-l border-admin-border overflow-hidden"
           >
-            <div className="p-4 border-b border-chat-border">
+            <div className="p-4 border-b border-admin-border">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-chat-muted uppercase tracking-wider">Infos</span>
+                <span className="text-xs font-medium text-admin-muted uppercase tracking-wider">Infos</span>
                 <button
                   type="button"
                   onClick={() => setShowInfoPanel(false)}
-                  className="p-1 rounded text-slate-500 hover:text-slate-800"
+                  className="p-1 rounded text-admin-muted hover:text-admin-text"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -631,22 +654,22 @@ export default function AdminConversations() {
             </div>
             <div className="p-4 space-y-4 overflow-y-auto">
               <div>
-                <p className="text-xs text-chat-muted uppercase tracking-wider mb-1">ID utilisateur</p>
-                <p className="text-sm text-slate-800 font-mono truncate">{selected.user_id || '—'}</p>
+                <p className="text-xs text-admin-muted uppercase tracking-wider mb-1">ID utilisateur</p>
+                <p className="text-sm text-admin-text font-mono truncate">{selected.user_id || '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-chat-muted uppercase tracking-wider mb-1">Création</p>
-                <p className="text-sm text-slate-800">
+                <p className="text-xs text-admin-muted uppercase tracking-wider mb-1">Création</p>
+                <p className="text-sm text-admin-text">
                   {selected.created_at ? new Date(selected.created_at).toLocaleString('fr-FR') : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-chat-muted uppercase tracking-wider mb-1">Messages</p>
-                <p className="text-sm text-slate-800">{messages.length}</p>
+                <p className="text-xs text-admin-muted uppercase tracking-wider mb-1">Messages</p>
+                <p className="text-sm text-admin-text">{messages.length}</p>
               </div>
               <div>
-                <p className="text-xs text-chat-muted uppercase tracking-wider mb-1">Statut</p>
-                <p className={`text-sm ${statusColors[selected.status] || 'text-slate-800'}`}>
+                <p className="text-xs text-admin-muted uppercase tracking-wider mb-1">Statut</p>
+                <p className={`text-sm ${statusColors[selected.status] || 'text-admin-text'}`}>
                   {statusLabels[selected.status] || selected.status}
                 </p>
               </div>
@@ -656,7 +679,7 @@ export default function AdminConversations() {
                   onClick={handleBan}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium"
+                  className="w-full py-2 rounded-xl border border-admin-danger/50 text-admin-danger hover:bg-admin-danger/20 text-sm font-medium"
                 >
                   Bannir l'utilisateur
                 </motion.button>
@@ -700,19 +723,19 @@ export default function AdminConversations() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="rounded-xl bg-white border border-chat-border shadow-xl p-6 max-w-md w-full"
+              className="rounded-2xl bg-admin-card border border-admin-border shadow-admin-glow p-6 max-w-md w-full"
             >
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Modifier le message</h3>
+              <h3 className="text-lg font-semibold text-admin-text mb-2">Modifier le message</h3>
               <textarea
                 value={modal.editContent ?? ''}
                 onChange={(e) => setModal((prev) => ({ ...prev, editContent: e.target.value }))}
-                className="w-full min-h-[100px] rounded-xl bg-slate-50 border border-chat-border px-4 py-3 text-slate-800 placeholder-chat-muted focus:outline-none focus:ring-2 focus:ring-blue-500/30 mb-4"
+                className="w-full min-h-[100px] rounded-xl bg-admin-surface border border-admin-border px-4 py-3 text-admin-text placeholder-admin-muted focus:outline-none focus:ring-2 focus:ring-admin-purple/50 mb-4"
                 placeholder="Nouveau contenu..."
                 autoFocus
               />
               <div className="flex justify-end gap-3">
-                <motion.button type="button" onClick={() => setModal(null)} whileTap={{ scale: 0.98 }} className="px-4 py-2 rounded-xl bg-slate-100 text-chat-muted hover:text-slate-800">Annuler</motion.button>
-                <motion.button type="button" onClick={confirmEditMessage} whileTap={{ scale: 0.98 }} className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700">Enregistrer</motion.button>
+                <motion.button type="button" onClick={() => setModal(null)} whileTap={{ scale: 0.98 }} className="px-4 py-2 rounded-xl bg-admin-surface text-admin-muted hover:text-admin-text">Annuler</motion.button>
+                <motion.button type="button" onClick={confirmEditMessage} whileTap={{ scale: 0.98 }} className="px-4 py-2 rounded-xl bg-admin-purple text-white hover:bg-admin-purple/90">Enregistrer</motion.button>
               </div>
             </motion.div>
           </div>

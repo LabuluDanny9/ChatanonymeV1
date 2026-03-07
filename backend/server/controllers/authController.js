@@ -37,8 +37,19 @@ async function register(req, res, next) {
       user: { id: user.id, pseudo: user.pseudo, phone: user.phone, email: user.email, photo: user.photo },
     });
   } catch (err) {
+    if (isDbConnectionError(err)) {
+      return res.status(503).json({
+        error: 'Base de données indisponible. Vérifiez votre connexion ou l\'état de votre projet Supabase.',
+      });
+    }
     next(err);
   }
+}
+
+function isDbConnectionError(err) {
+  const code = err?.code || err?.cause?.code;
+  return code === 'ECONNREFUSED' || code === 'ETIMEDOUT' || code === 'ENOTFOUND'
+    || err?.message?.includes('Connection terminated') || err?.message?.includes('connection timeout');
 }
 
 // POST /api/auth/login - Login unifié (pseudo ou email) → retourne user ou admin
@@ -108,21 +119,28 @@ async function login(req, res, next) {
     }
     return res.status(401).json({ error: 'Identifiants incorrects' });
   } catch (err) {
+    if (isDbConnectionError(err)) {
+      return res.status(503).json({
+        error: 'Base de données indisponible. Vérifiez votre connexion ou l\'état de votre projet Supabase.',
+      });
+    }
     next(err);
   }
 }
 
-// GET /api/auth/admin/can-register - Vérifie si la création d'admin est possible (aucun admin existant)
+const MAX_ADMINS = 3;
+
+// GET /api/auth/admin/can-register - Vérifie si la création d'admin est possible (moins de 3 admins)
 async function canRegisterAdmin(req, res, next) {
   try {
-    const exists = await Admin.exists();
-    return res.json({ canRegister: !exists });
+    const count = await Admin.count();
+    return res.json({ canRegister: count < MAX_ADMINS, count, max: MAX_ADMINS });
   } catch (err) {
     next(err);
   }
 }
 
-// POST /api/auth/admin/register - Créer le premier compte admin (si aucun n'existe)
+// POST /api/auth/admin/register - Créer un compte admin (jusqu'à 3 admins)
 async function registerAdmin(req, res, next) {
   try {
     const { email, password } = req.body || {};
@@ -132,9 +150,9 @@ async function registerAdmin(req, res, next) {
     if (password.length < 6) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
     }
-    const exists = await Admin.exists();
-    if (exists) {
-      return res.status(403).json({ error: 'Un administrateur existe déjà. Utilisez la page de connexion.' });
+    const count = await Admin.count();
+    if (count >= MAX_ADMINS) {
+      return res.status(403).json({ error: `Le nombre maximum d'administrateurs (${MAX_ADMINS}) est atteint.` });
     }
     const existingEmail = await Admin.findByEmail(email.trim());
     if (existingEmail) {
@@ -183,6 +201,11 @@ async function adminLogin(req, res, next) {
       admin: { id: admin.id, email: admin.email, photo: admin.photo },
     });
   } catch (err) {
+    if (isDbConnectionError(err)) {
+      return res.status(503).json({
+        error: 'Base de données indisponible. Vérifiez votre connexion Supabase.',
+      });
+    }
     next(err);
   }
 }

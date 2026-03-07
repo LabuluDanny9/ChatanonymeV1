@@ -7,6 +7,7 @@ const Admin = require('../models/Admin');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const Topic = require('../models/Topic');
+const TopicComment = require('../models/TopicComment');
 const AuditLog = require('../models/AuditLog');
 const { pool } = require('../config/database');
 
@@ -209,13 +210,20 @@ async function updateMessage(req, res, next) {
   }
 }
 
-// GET /api/admin/topics - Liste sujets (admin)
+// GET /api/admin/topics - Liste sujets (admin) avec nombre de commentaires
 async function listTopics(req, res, next) {
   try {
     const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
     const offset = parseInt(req.query.offset, 10) || 0;
     const { topics, total } = await Topic.findAll({ limit, offset });
-    return res.json({ topics, total });
+    const TopicComment = require('../models/TopicComment');
+    const topicsWithComments = await Promise.all(
+      topics.map(async (t) => ({
+        ...t,
+        comments_count: await TopicComment.countByTopicId(t.id),
+      }))
+    );
+    return res.json({ topics: topicsWithComments, total });
   } catch (err) {
     next(err);
   }
@@ -257,6 +265,36 @@ async function deleteTopic(req, res, next) {
     await Topic.delete(topic.id);
     await AuditLog.create(req.admin.id, 'topic.delete', 'topic', topic.id, null, getClientIp(req));
     return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/topics/comments/:commentId/reply-private - Répondre en privé à un utilisateur (admin)
+async function replyPrivateToComment(req, res, next) {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body || {};
+    if (!content || !String(content).trim()) {
+      return res.status(400).json({ error: 'Contenu requis' });
+    }
+    const comment = await TopicComment.findById(commentId);
+    if (!comment) return res.status(404).json({ error: 'Commentaire introuvable' });
+    const authorId = comment.author_id ?? comment.authorId;
+    if (comment.author_type !== 'user' || !authorId || authorId === 'anonymous') {
+      return res.status(400).json({ error: 'Impossible de répondre en privé à un commentaire anonyme' });
+    }
+    const conversation = await Conversation.getOrCreateForUser(authorId);
+    const message = await Message.create(
+      conversation.id, 'admin', req.admin.id,
+      String(content).trim(), 'text', {}, comment.topic_id
+    );
+    const io = req.app.get('io');
+    if (io) io.to(`user:${authorId}`).emit('message:new', { conversationId: conversation.id, userId: authorId, message });
+    try {
+      await AuditLog.create(req.admin.id, 'comment.reply_private', 'topic_comment', commentId, null, getClientIp(req));
+    } catch {}
+    return res.status(201).json(message);
   } catch (err) {
     next(err);
   }
@@ -309,6 +347,7 @@ module.exports = {
   createTopic,
   updateTopic,
   deleteTopic,
+  replyPrivateToComment,
   sendBroadcast,
   updatePhoto,
 };

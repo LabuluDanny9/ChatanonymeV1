@@ -6,13 +6,15 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Shield, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Shield, ArrowRight } from 'lucide-react';
 import AuthInput from '../components/auth/AuthInput';
 import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../lib/api';
 
 const TABS = { login: 0, signup: 1, anonymous: 2 };
+
+const AVATAR_OPTIONS = ['😊', '🎭', '🌟', '🔒', '🦋', '🌙', '🌸', '🦊', '🌈', '🦉', '🌻', '🐱'];
 
 export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
   const isAdmin = mode === 'admin';
@@ -23,7 +25,9 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
     pseudo: '',
     password: '',
     confirmPassword: '',
+    avatar: AVATAR_OPTIONS[0],
     remember: false,
+    acceptPrivacy: false,
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,20 +40,19 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    const identifier = isAdmin ? form.email : form.pseudo || form.email;
+    const identifier = isAdmin ? form.email : form.pseudo;
     if (!identifier?.trim() || !form.password) {
       setError('Tous les champs sont requis');
       return;
     }
     setLoading(true);
     try {
-      const fn = isAdmin ? loginAdmin : loginUser;
-      const result = isAdmin
-        ? await loginAdmin(form.email.trim(), form.password)
-        : await loginUser(identifier.trim(), form.password);
+      await (isAdmin
+        ? loginAdmin(form.email.trim(), form.password)
+        : loginUser(identifier.trim(), form.password));
       setSuccess(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Identifiants incorrects');
+      setError(getErrorMessage(err, 'Identifiants incorrects'));
       setLoading(false);
     }
   };
@@ -69,9 +72,13 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
       setError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
+    if (!form.acceptPrivacy) {
+      setError('Vous devez accepter la politique de confidentialité pour vous inscrire.');
+      return;
+    }
     setLoading(true);
     try {
-      await registerUser(form.pseudo.trim(), form.password, null, form.email?.trim() || null, null);
+      await registerUser(form.pseudo.trim(), form.password, null, null, form.avatar || null);
       setSuccess(true);
     } catch (err) {
       setError(getErrorMessage(err, "Erreur lors de l'inscription"));
@@ -90,7 +97,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
       <aside className="hidden lg:flex lg:w-[40%] flex-col justify-between bg-corum-night p-12 relative overflow-hidden">
         <div>
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ChatAnonyme" className="h-8 w-auto" />
+            <img src="/logo.png" alt="ChatAnonyme" className="h-14 w-auto" />
             <h1 className="text-2xl font-bold text-chat-offwhite tracking-tight">ChatAnonyme</h1>
           </div>
           <p className="text-sm text-corum-gray mt-1">Plateforme sécurisée</p>
@@ -130,7 +137,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
             <div className="flex items-center gap-2 justify-center">
-              <img src="/logo.png" alt="ChatAnonyme" className="h-7 w-auto" />
+              <img src="/logo.png" alt="ChatAnonyme" className="h-12 w-auto" />
               <h1 className="text-xl font-bold text-chat-offwhite">ChatAnonyme</h1>
             </div>
             <p className="text-xs text-corum-gray mt-1">Accès sécurisé</p>
@@ -247,9 +254,9 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                       </motion.p>
                     )}
                     <AuthInput
-                      label="Pseudo ou email"
-                      value={form.pseudo || form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value, email: e.target.value }))}
+                      label="Pseudo"
+                      value={form.pseudo}
+                      onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value }))}
                       required
                     />
                     <AuthInput
@@ -294,18 +301,35 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                         {error}
                       </motion.p>
                     )}
+                    <div>
+                      <p className="text-sm text-corum-offwhite mb-2">Choisir un avatar</p>
+                      <div className="flex flex-wrap gap-2">
+                        {AVATAR_OPTIONS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => setForm((f) => ({ ...f, avatar: emoji }))}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all ${
+                              form.avatar === emoji
+                                ? 'bg-corum-turquoise/30 border-2 border-corum-turquoise'
+                                : 'bg-white/5 border border-white/10 hover:border-corum-turquoise/50'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <AuthInput
-                      label="Pseudo"
+                      label="Choisir un pseudo"
+                      placeholder="Ex : Écouteur2024, Anonyme123..."
                       value={form.pseudo}
                       onChange={(e) => setForm((f) => ({ ...f, pseudo: e.target.value }))}
                       required
                     />
-                    <AuthInput
-                      type="email"
-                      label="Email (optionnel)"
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    />
+                    <p className="text-xs text-corum-gray -mt-2">
+                      <strong>Important :</strong> Votre pseudo ne doit rien avoir en commun avec votre nom, prénom ou toute indication de votre identité. Choisissez un pseudonyme totalement fictif pour préserver votre anonymat.
+                    </p>
                     <AuthInput
                       type="password"
                       label="Mot de passe"
@@ -323,6 +347,24 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                       error={form.confirmPassword && form.password !== form.confirmPassword ? 'Les mots de passe ne correspondent pas' : undefined}
                       required
                     />
+                    {/* Politique de confidentialité */}
+                    <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
+                      <p className="text-sm text-corum-offwhite leading-relaxed">
+                        <strong>Politique de confidentialité — Anonymat total</strong><br />
+                        En vous inscrivant sur cette plateforme, vous restez totalement anonyme. Nous ne collectons aucune donnée personnelle vous concernant (nom, prénom, email, téléphone, adresse). L'objectif est de vous permettre de vous exprimer librement, sans crainte, et de vous sentir à l'aise pour partager vos préoccupations en toute confidentialité.
+                      </p>
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.acceptPrivacy}
+                          onChange={(e) => setForm((f) => ({ ...f, acceptPrivacy: e.target.checked }))}
+                          className="mt-1 rounded border-white/20 bg-white/5 text-corum-turquoise focus:ring-corum-turquoise"
+                        />
+                        <span className="text-sm text-corum-gray">
+                          J'ai lu et j'accepte cette politique de confidentialité. Je comprends que mon anonymat est préservé.
+                        </span>
+                      </label>
+                    </div>
                     <motion.button
                       type="submit"
                       disabled={loading}
@@ -345,7 +387,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                   >
                     <h2 className="text-xl font-semibold text-corum-offwhite">Entrer anonymement</h2>
                     <p className="text-sm text-corum-gray">
-                      Inscription rapide avec un pseudo. Vos échanges restent confidentiels et anonymes.
+                      Inscription avec un pseudo fictif. Aucune donnée personnelle n'est collectée. Exprimez-vous librement, sans crainte.
                     </p>
                     <motion.button
                       type="button"

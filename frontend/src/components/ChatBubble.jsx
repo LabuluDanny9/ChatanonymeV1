@@ -7,6 +7,7 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, FileText, Video, CheckCheck, Edit2, Trash2 } from 'lucide-react';
 import { getApiBaseUrl } from '../lib/api';
+import { decodeHtmlEntities } from '../lib/textUtils';
 
 function resolveUrl(url) {
   if (!url) return '';
@@ -141,25 +142,34 @@ function FileBubble({ data, name }) {
   );
 }
 
-export default function ChatBubble({ message, isAdmin, isRead, createdAt, variant = 'default', onDelete, onEdit, canDelete, canEdit }) {
+export default function ChatBubble({ message, isAdmin, isRead, createdAt, variant = 'default', onDelete, onEdit, canDelete, canEdit, userAvatar, adminAvatar }) {
   const content = parseMessage(message);
   const adminClass = variant === 'admin'
-    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+    ? 'bg-gradient-to-br from-admin-purple to-admin-blue text-white'
     : 'bg-chat-primary text-white';
-  const textClass = isAdmin ? 'text-white' : 'text-slate-800';
+  const textClass = isAdmin ? 'text-white' : (variant === 'admin' ? 'text-admin-text' : 'text-slate-800');
   const isTextEditable = content.type === 'text' && canEdit;
   const showActions = (canDelete || isTextEditable) && (onDelete || onEdit);
+
+  const hasUserAvatar = !isAdmin && userAvatar && userAvatar.trim().length <= 4;
+  const hasAdminAvatar = isAdmin && adminAvatar && adminAvatar.trim().length <= 4;
+  const hasAdminAvatarImg = isAdmin && adminAvatar && adminAvatar.startsWith('http');
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} group/bubble`}
+      className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} group/bubble gap-2`}
     >
+      {hasUserAvatar && (
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg ${variant === 'admin' ? 'bg-admin-surface' : 'bg-slate-200'}`}>
+          {userAvatar}
+        </div>
+      )}
       <div
         className={`p-3 rounded-2xl max-w-[75%] ${
-          isAdmin ? adminClass : 'bg-slate-100 border border-chat-border'
+          isAdmin ? adminClass : (variant === 'admin' ? 'bg-admin-card border border-admin-border' : 'bg-slate-100 border border-chat-border')
         }`}
       >
         {content.type === 'voice' && (
@@ -169,22 +179,31 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
         {content.type === 'video' && <VideoBubble data={content.data} />}
         {content.type === 'file' && <FileBubble data={content.data} name={content.name} />}
         {content.type === 'text' && content.data && (
-          <p className={`text-sm whitespace-pre-wrap ${textClass}`}>{content.data}</p>
+          <p className={`text-sm whitespace-pre-wrap ${textClass}`}>{decodeHtmlEntities(content.data)}</p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className={`text-xs ${isAdmin ? 'text-white/90' : 'text-chat-muted'}`}>
+          <span className={`text-xs ${isAdmin ? 'text-white/90' : (variant === 'admin' ? 'text-admin-muted' : 'text-chat-muted')}`}>
             {createdAt ? new Date(createdAt).toLocaleString('fr-FR') : ''}
           </span>
           {message.edited_at && (
             <span className="text-xs text-chat-muted italic">(modifié)</span>
           )}
           {isAdmin && isRead !== undefined && (
-            <span className={`inline-flex ${isRead ? 'text-emerald-400' : 'text-chat-muted'}`} title={isRead ? 'Lu' : 'Reçu'}>
+            <span className={`inline-flex ${isRead ? 'text-admin-success' : (variant === 'admin' ? 'text-admin-muted' : 'text-chat-muted')}`} title={isRead ? 'Lu' : 'Reçu'}>
               <CheckCheck className="w-4 h-4" strokeWidth={2} />
             </span>
           )}
         </div>
       </div>
+      {(hasAdminAvatar || hasAdminAvatarImg) && (
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${variant === 'admin' ? 'bg-admin-purple/20' : 'bg-blue-100'}`}>
+          {hasAdminAvatarImg ? (
+            <img src={adminAvatar} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-lg">{adminAvatar}</span>
+          )}
+        </div>
+      )}
       {showActions && (
         <div className="flex items-center gap-1 ml-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity">
           {isTextEditable && onEdit && (
@@ -192,7 +211,7 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
               type="button"
               onClick={() => onEdit(message)}
               whileTap={{ scale: 0.9 }}
-              className="p-1.5 rounded-lg text-chat-muted hover:text-chat-accent hover:bg-white/10"
+              className={`p-1.5 rounded-lg hover:bg-white/10 ${variant === 'admin' ? 'text-admin-muted hover:text-admin-purple' : 'text-chat-muted hover:text-chat-accent'}`}
               title="Modifier"
             >
               <Edit2 className="w-4 h-4" strokeWidth={1.5} />
@@ -203,7 +222,7 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
               type="button"
               onClick={() => onDelete(message.id)}
               whileTap={{ scale: 0.9 }}
-              className="p-1.5 rounded-lg text-chat-muted hover:text-chat-danger hover:bg-chat-danger/10"
+              className={`p-1.5 rounded-lg ${variant === 'admin' ? 'text-admin-muted hover:text-admin-danger hover:bg-admin-danger/10' : 'text-chat-muted hover:text-chat-danger hover:bg-chat-danger/10'}`}
               title="Supprimer"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />

@@ -5,8 +5,35 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['DM Sans', 'Inter', 'system-ui', 'sans-serif'],
+        'admin': ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
+        /* Admin Panel — Dark SaaS Theme */
+        'admin-bg': '#0d1117',
+        'admin-surface': '#161b22',
+        'admin-card': '#21262d',
+        'admin-border': '#30363d',
+        'admin-text': '#e6edf3',
+        'admin-muted': '#8b949e',
+        'admin-accent': '#58a6ff',
+        'admin-purple': '#a371f7',
+        'admin-purple-glow': 'rgba(163, 113, 247, 0.15)',
+        'admin-blue': '#1f6feb',
+        'admin-success': '#3fb950',
+        'admin-warning': '#d29922',
+        'admin-danger': '#f85149',
+        /* App utilisateur — Dark mode, bleu profond, violet néon (Reddit/Discord/Twitter) */
+        'app-bg': '#0d1117',
+        'app-surface': '#161b22',
+        'app-card': '#21262d',
+        'app-border': '#30363d',
+        'app-text': '#e6edf3',
+        'app-muted': '#8b949e',
+        'app-purple': '#a371f7',
+        'app-blue': '#1f6feb',
+        'app-success': '#3fb950',
+        'app-warning': '#d29922',
+        'app-danger': '#f85149',
         /* Charte bleu/blanc — moderne */
         'chat-bg': '#ffffff',
         'chat-surface': '#f8fafc',
@@ -32,6 +59,15 @@ module.exports = {
         success: '#22c55e',
         'text-main': '#1e293b',
         muted: '#64748b',
+        /* Style Facebook */
+        'fb-bg': '#f0f2f5',
+        'fb-card': '#ffffff',
+        'fb-blue': '#1877f2',
+        'fb-blue-hover': '#166fe5',
+        'fb-text': '#050505',
+        'fb-text-secondary': '#65676b',
+        'fb-border': '#e4e6eb',
+        'fb-input-bg': '#f0f2f5',
       },
       spacing: {
         4.5: '18px',
@@ -44,6 +80,13 @@ module.exports = {
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(37, 99, 235, 0.1), 0 4px 6px -4px rgba(37, 99, 235, 0.1)',
         'primary': '0 4px 14px 0 rgba(37, 99, 235, 0.25)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.37)',
+        'admin-glow': '0 0 20px rgba(163, 113, 247, 0.2)',
+        'admin-card': '0 1px 3px rgba(0, 0, 0, 0.3)',
+        'app-glow': '0 0 24px rgba(163, 113, 247, 0.25)',
+      },
+      backdropBlur: {
+        'admin': '12px',
       },
       transitionDuration: {
         fast: '150ms',

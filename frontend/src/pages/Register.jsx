@@ -1,11 +1,10 @@
 /**
- * Inscription - Design system
+ * Inscription - Design system (anonymat total)
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
@@ -13,8 +12,8 @@ export default function Register() {
   const navigate = useNavigate();
   const [pseudo, setPseudo] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,9 +24,17 @@ export default function Register() {
       setError('Pseudo et mot de passe requis');
       return;
     }
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+    if (!acceptPrivacy) {
+      setError('Vous devez accepter la politique de confidentialité.');
+      return;
+    }
     setLoading(true);
     try {
-      await registerUser(pseudo.trim(), password, phone.trim() || null, email.trim() || null, null);
+      await registerUser(pseudo.trim(), password, null, null, null);
       navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.error || err.message || "Erreur lors de l'inscription";
@@ -55,14 +62,18 @@ export default function Register() {
       >
         {error && <p className="text-sm text-danger bg-danger/10 rounded-xl p-3">{error}</p>}
         <div>
-          <label className="block text-sm text-muted mb-2">Pseudo *</label>
+          <label className="block text-sm text-muted mb-2">Choisir un pseudo *</label>
           <input
             type="text"
             value={pseudo}
             onChange={(e) => setPseudo(e.target.value)}
+            placeholder="Ex : Écouteur2024, Anonyme123..."
             required
             className="w-full rounded-xl bg-white/5 border border-white/8 px-4 py-3 text-[#E5E7EB] focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
+          <p className="text-xs text-muted mt-1">
+            Votre pseudo ne doit rien avoir en commun avec votre nom, prénom ou identité. Choisissez un pseudonyme fictif pour préserver votre anonymat.
+          </p>
         </div>
         <div>
           <label className="block text-sm text-muted mb-2">Mot de passe *</label>
@@ -76,22 +87,28 @@ export default function Register() {
           />
         </div>
         <div>
-          <label className="block text-sm text-muted mb-2">Téléphone (optionnel)</label>
+          <label className="block text-sm text-muted mb-2">Confirmation *</label>
           <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-xl bg-white/5 border border-white/8 px-4 py-3 text-[#E5E7EB]"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="w-full rounded-xl bg-white/5 border border-white/8 px-4 py-3 text-[#E5E7EB] focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
-        <div>
-          <label className="block text-sm text-muted mb-2">Email (optionnel)</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl bg-white/5 border border-white/8 px-4 py-3 text-[#E5E7EB]"
-          />
+        <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+          <p className="text-sm text-[#E5E7EB] mb-3">
+            <strong>Politique de confidentialité :</strong> En vous inscrivant, vous restez totalement anonyme. Nous ne collectons aucune donnée personnelle. L'objectif est de vous permettre de vous exprimer librement, sans crainte.
+          </p>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptPrivacy}
+              onChange={(e) => setAcceptPrivacy(e.target.checked)}
+              className="mt-1 rounded"
+            />
+            <span className="text-xs text-muted">J'accepte cette politique de confidentialité.</span>
+          </label>
         </div>
         <motion.button
           type="submit"

@@ -4,6 +4,7 @@
   "outputDirectory": "frontend/build",
   "framework": null,
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/", "destination": "/index.html" },
     { "source": "/connexion", "destination": "/index.html" },
     { "source": "/inscription", "destination": "/index.html" },

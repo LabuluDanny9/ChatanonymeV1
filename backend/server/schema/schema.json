@@ -1,80 +1,48 @@
 {
-  "tables": {
-    "users": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "pseudo": { "type": "VARCHAR(100)", "unique": true },
-        "password_hash": { "type": "VARCHAR(255)" },
-        "phone": { "type": "VARCHAR(50)", "nullable": true },
-        "email": { "type": "VARCHAR(255)", "nullable": true },
-        "photo": { "type": "TEXT", "nullable": true },
-        "status": { "type": "VARCHAR(20)", "default": "active" },
-        "created_at": { "type": "TIMESTAMPTZ" }
-      }
+  "tables": [
+    {
+      "name": "users",
+      "description": "Utilisateurs inscrits (pseudo, mot de passe)",
+      "columns": ["id", "pseudo", "password_hash", "phone", "email", "photo", "status", "created_at"]
     },
-    "admins": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "email": { "type": "VARCHAR(255)", "unique": true },
-        "password_hash": { "type": "VARCHAR(255)" },
-        "photo": { "type": "TEXT", "default": "" },
-        "created_at": { "type": "TIMESTAMPTZ" },
-        "updated_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "admins",
+      "description": "Administrateurs (email, mot de passe)",
+      "columns": ["id", "email", "password_hash", "photo", "created_at", "updated_at"]
     },
-    "conversations": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "user_id": { "type": "UUID", "references": "users(id)" },
-        "status": { "type": "VARCHAR(20)", "default": "open" },
-        "created_at": { "type": "TIMESTAMPTZ" },
-        "updated_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "conversations",
+      "description": "Conversations 1-to-admin",
+      "columns": ["id", "user_id", "status", "created_at", "updated_at"]
     },
-    "messages": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "conversation_id": { "type": "UUID", "references": "conversations(id)" },
-        "sender_type": { "type": "VARCHAR(10)" },
-        "sender_id": { "type": "UUID" },
-        "content": { "type": "TEXT", "nullable": true },
-        "message_type": { "type": "VARCHAR(20)", "default": "text" },
-        "metadata": { "type": "JSONB", "default": "{}" },
-        "topic_id": { "type": "UUID", "references": "topics(id)", "nullable": true },
-        "is_read": { "type": "BOOLEAN", "default": false },
-        "deleted_at": { "type": "TIMESTAMPTZ", "nullable": true },
-        "edited_at": { "type": "TIMESTAMPTZ", "nullable": true },
-        "created_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "topics",
+      "description": "Sujets / forums thématiques",
+      "columns": ["id", "title", "content", "published_at", "created_at"]
     },
-    "topics": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "title": { "type": "VARCHAR(500)" },
-        "content": { "type": "TEXT" },
-        "published_at": { "type": "TIMESTAMPTZ" },
-        "created_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "messages",
+      "description": "Messages (texte, vocal, image, vidéo, fichier)",
+      "columns": ["id", "conversation_id", "sender_type", "sender_id", "content", "message_type", "metadata", "topic_id", "is_read", "deleted_at", "edited_at", "created_at"]
     },
-    "broadcasts": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "admin_id": { "type": "UUID", "references": "admins(id)" },
-        "content": { "type": "TEXT" },
-        "created_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "broadcasts",
+      "description": "Messages collectifs admin",
+      "columns": ["id", "admin_id", "content", "created_at"]
     },
-    "audit_logs": {
-      "columns": {
-        "id": { "type": "UUID", "primary": true },
-        "admin_id": { "type": "UUID", "references": "admins(id)", "nullable": true },
-        "action": { "type": "VARCHAR(100)" },
-        "target_type": { "type": "VARCHAR(50)", "nullable": true },
-        "target_id": { "type": "UUID", "nullable": true },
-        "details": { "type": "JSONB", "nullable": true },
-        "ip_address": { "type": "INET", "nullable": true },
-        "created_at": { "type": "TIMESTAMPTZ" }
-      }
+    {
+      "name": "audit_logs",
+      "description": "Logs d'audit",
+      "columns": ["id", "admin_id", "action", "target_type", "target_id", "details", "ip_address", "created_at"]
     }
+  ],
+  "json_structure": {
+    "users": [],
+    "admins": [],
+    "conversations": [],
+    "messages": [],
+    "topics": [],
+    "broadcasts": [],
+    "audit_logs": []
   }
 }

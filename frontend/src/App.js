@@ -19,14 +19,17 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminConversations from './pages/admin/AdminConversations';
 import AdminTopics from './pages/admin/AdminTopics';
+import AdminReports from './pages/admin/AdminReports';
+import AdminSettings from './pages/admin/AdminSettings';
 import Layout from './components/Layout';
-import AdminLayout from './components/AdminLayout';
+import AdminLayout from './components/admin/AdminLayout';
 import UserDashboardLayout from './components/dashboard/UserDashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import DashboardChat from './pages/dashboard/DashboardChat';
 import DashboardTopics from './pages/dashboard/DashboardTopics';
 import DashboardHistory from './pages/dashboard/DashboardHistory';
 import DashboardProfile from './pages/dashboard/DashboardProfile';
+import DashboardSettings from './pages/dashboard/DashboardSettings';
 
 function PrivateUser({ children }) {
   const { user, admin, loading } = useAuth();
@@ -60,6 +63,7 @@ function AppRoutes() {
           <Route path="topics/:id" element={<TopicView />} />
           <Route path="history" element={<DashboardHistory />} />
           <Route path="profile" element={<DashboardProfile />} />
+          <Route path="settings" element={<DashboardSettings />} />
         </Route>
       </Route>
       <Route path="/admin">
@@ -69,6 +73,9 @@ function AppRoutes() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="conversations" element={<AdminConversations />} />
           <Route path="topics" element={<AdminTopics />} />
+          <Route path="topics/:id" element={<TopicView />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="settings" element={<AdminSettings />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

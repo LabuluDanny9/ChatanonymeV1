@@ -49,7 +49,7 @@ const Conversation = {
     const { limit, offset } = pagination;
     const { rows } = await pool.query(
       `SELECT c.id, c.user_id, c.status, c.created_at, c.updated_at,
-              u.pseudo, u.status AS user_status
+              u.pseudo, u.photo, u.status AS user_status
        FROM conversations c
        JOIN users u ON u.id = c.user_id
        ORDER BY c.updated_at DESC

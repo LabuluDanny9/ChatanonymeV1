@@ -9,11 +9,11 @@ import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { MessageCircle, Megaphone, FileText, ExternalLink } from 'lucide-react';
 import api from '../lib/api';
+import { decodeHtmlEntities } from '../lib/textUtils';
 import { useAuth } from '../context/AuthContext';
 import Chat from './Chat';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-const WS_PATH = process.env.REACT_APP_WS_PATH || '/ws';
+import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
 
 const tabs = [
   { id: 'chat', label: 'Chat', icon: MessageCircle },
@@ -43,7 +43,7 @@ export default function UserDashboard() {
   useEffect(() => {
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
-    const socket = io(API_URL, { path: WS_PATH, auth: { token } });
+    const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socket.on('broadcast:new', (b) => setBroadcasts((prev) => [b, ...prev]));
     return () => socket.disconnect();
   }, []);
@@ -116,7 +116,7 @@ export default function UserDashboard() {
             broadcasts.map((b) => (
               <div key={b.id} className="glass-card p-6">
                 <p className="text-sm text-muted mb-2">{new Date(b.created_at).toLocaleString('fr-FR')}</p>
-                <p className="text-[#E5E7EB] whitespace-pre-wrap">{b.content}</p>
+                <p className="text-[#E5E7EB] whitespace-pre-wrap">{decodeHtmlEntities(b.content || '')}</p>
               </div>
             ))
           )}

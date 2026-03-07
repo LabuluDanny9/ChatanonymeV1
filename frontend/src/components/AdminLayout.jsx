@@ -35,6 +35,15 @@ function Breadcrumb() {
     conversations: 'Conversations',
     topics: 'Sujets',
   };
+  if (segments[segments.length - 1]?.match(/^[0-9a-f-]{36}$/i)) {
+    return (
+      <nav className="flex items-center gap-2 text-sm">
+        <Link to="/admin/topics" className="text-slate-500 hover:text-slate-800">Sujets</Link>
+        <ChevronRight className="w-4 h-4 text-slate-300" strokeWidth={2} />
+        <span className="font-medium text-slate-800">Commentaires</span>
+      </nav>
+    );
+  }
   return (
     <nav className="flex items-center gap-2 text-sm">
       {segments.map((seg, i) => (
@@ -92,9 +101,22 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="p-4 border-t border-chat-border">
-          <div className="px-4 py-2 mb-3">
-            <p className="text-xs text-chat-muted truncate" title={admin?.email}>{admin?.email}</p>
-            <p className="text-xs text-slate-500 mt-0.5">Administrateur</p>
+          <div className="flex items-center gap-3 px-4 py-2 mb-3 rounded-xl bg-slate-50 border border-chat-border">
+            {admin?.photo && admin.photo.trim().length <= 4 ? (
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-xl shrink-0">
+                {admin.photo}
+              </div>
+            ) : admin?.photo && admin.photo.startsWith('http') ? (
+              <img src={admin.photo} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <span className="text-sm font-semibold text-blue-600">{admin?.email?.[0]?.toUpperCase() || 'A'}</span>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-chat-muted truncate" title={admin?.email}>{admin?.email}</p>
+              <p className="text-xs text-slate-500 mt-0.5">Administrateur</p>
+            </div>
           </div>
           <motion.button
             type="button"
@@ -169,7 +191,11 @@ export default function AdminLayout() {
             <Breadcrumb />
           </div>
           <div className="flex items-center gap-3 ml-4">
-            {admin?.photo ? (
+            {admin?.photo && admin.photo.trim().length <= 4 ? (
+              <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xl border-2 border-slate-200">
+                {admin.photo}
+              </div>
+            ) : admin?.photo && admin.photo.startsWith('http') ? (
               <img src={admin.photo} alt="" className="w-9 h-9 rounded-full object-cover border-2 border-slate-200" />
             ) : (
               <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">

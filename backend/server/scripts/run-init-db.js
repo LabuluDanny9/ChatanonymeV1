@@ -1,6 +1,6 @@
 /**
  * Initialisation PostgreSQL — ChatAnonyme
- * Exécute init-db.sql pour créer le schéma (users, admins, conversations, messages, etc.)
+ * Exécute init-db-complet.sql pour créer le schéma complet (users, admins, topics, topic_comments, etc.)
  * Usage: npm run init-db
  */
 
@@ -21,7 +21,8 @@ async function run() {
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 15000,
+    ssl: (dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')) ? { rejectUnauthorized: false } : false,
   });
 
   try {
@@ -30,7 +31,7 @@ async function run() {
     console.log('Connexion OK.');
 
     const fs = require('fs');
-    const sqlPath = path.join(__dirname, 'init-db.sql');
+    const sqlPath = path.join(__dirname, 'init-db-complet.sql');
     const raw = fs.readFileSync(sqlPath, 'utf8');
     const statements = raw
       .replace(/--[^\n]*/g, '')

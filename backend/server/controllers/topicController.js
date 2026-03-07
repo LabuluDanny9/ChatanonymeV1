@@ -3,6 +3,7 @@
  */
 
 const Topic = require('../models/Topic');
+const TopicComment = require('../models/TopicComment');
 
 // GET /api/topics - Liste des sujets publics (paginated)
 async function list(req, res, next) {
@@ -10,7 +11,13 @@ async function list(req, res, next) {
     const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
     const offset = parseInt(req.query.offset, 10) || 0;
     const { topics, total } = await Topic.findAll({ limit, offset });
-    return res.json({ topics, total });
+    const topicsWithCount = await Promise.all(
+      topics.map(async (t) => ({
+        ...t,
+        comments_count: await TopicComment.countByTopicId(t.id),
+      }))
+    );
+    return res.json({ topics: topicsWithCount, total });
   } catch (err) {
     next(err);
   }
@@ -23,7 +30,8 @@ async function getById(req, res, next) {
     if (!topic) {
       return res.status(404).json({ error: 'Sujet introuvable' });
     }
-    return res.json(topic);
+    const comments_count = await TopicComment.countByTopicId(topic.id);
+    return res.json({ ...topic, comments_count });
   } catch (err) {
     next(err);
   }

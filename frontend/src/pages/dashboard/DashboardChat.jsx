@@ -15,8 +15,7 @@ import AttachmentPicker from '../../components/chat/AttachmentPicker';
 import EmojiPicker from 'emoji-picker-react';
 import { useToast } from '../../context/ToastContext';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-const WS_PATH = process.env.REACT_APP_WS_PATH || '/ws';
+import { SOCKET_API_URL, getSocketOptions } from '../../lib/socketConfig';
 
 function formatDateSeparator(dateStr) {
   const d = new Date(dateStr);
@@ -32,6 +31,7 @@ export default function DashboardChat() {
   const { user } = useAuth();
   const toast = useToast();
   const [messages, setMessages] = useState([]);
+  const [adminAvatar, setAdminAvatar] = useState('');
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
@@ -84,7 +84,7 @@ export default function DashboardChat() {
     if (!user) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
-    const socket = io(API_URL, { path: WS_PATH, auth: { token } });
+    const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socketRef.current = socket;
     socket.on('message:new', (payload) => {
       setMessages((prev) => [...prev, payload.message]);
@@ -111,6 +111,10 @@ export default function DashboardChat() {
       }, 1500);
     }
   };
+
+  useEffect(() => {
+    api.get('/api/config').then(({ data }) => setAdminAvatar(data.adminAvatar || '')).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -237,27 +241,41 @@ export default function DashboardChat() {
   }, {});
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] min-h-[400px] rounded-2xl overflow-hidden bg-white border border-chat-border shadow-soft">
-      {/* Topbar — En-tête conversation */}
-      <div className="flex items-center gap-4 px-5 py-4 bg-white border-b border-chat-border shrink-0">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-sky-500 flex items-center justify-center shrink-0 shadow-soft">
-          <Shield className="w-6 h-6 text-white" strokeWidth={1.5} />
+    <div className="flex flex-col h-[calc(100vh-180px)] lg:h-[calc(100vh-140px)] min-h-[400px] rounded-2xl overflow-hidden bg-app-card/50 border border-app-border backdrop-blur-sm">
+      <div className="flex items-center gap-4 px-5 py-4 bg-app-surface/80 border-b border-app-border shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-app-purple to-app-blue flex items-center justify-center overflow-hidden">
+            {user?.photo && user.photo.trim().length <= 4 ? (
+              <span className="text-2xl">{user.photo}</span>
+            ) : (
+              <Shield className="w-6 h-6 text-white" strokeWidth={1.5} />
+            )}
+          </div>
+          {adminAvatar && (
+            <div className="w-10 h-10 rounded-xl bg-app-purple/20 flex items-center justify-center overflow-hidden border-2 border-app-border" title="Administrateur">
+              {adminAvatar.startsWith('http') ? (
+                <img src={adminAvatar} alt="" className="w-full h-full object-cover" />
+              ) : adminAvatar.trim().length <= 4 ? (
+                <span className="text-xl">{adminAvatar}</span>
+              ) : null}
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-slate-800 text-lg">Conversation anonyme</h3>
-          <p className="text-sm text-chat-muted truncate">Échanges confidentiels — Texte, images, vocal</p>
+          <h3 className="font-bold text-app-text text-lg">Conversation anonyme</h3>
+          <p className="text-sm text-app-muted truncate">Échanges confidentiels — Texte, images, vocal</p>
         </div>
         <div className="flex items-center gap-2">
           {online ? (
-            <span className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="flex items-center gap-1.5 text-xs text-app-success bg-app-success/10 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-app-success animate-pulse" />
               En ligne
             </span>
           ) : (
             <motion.span
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="text-xs text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-full"
+              className="text-xs text-app-warning bg-app-warning/10 px-3 py-1.5 rounded-full"
             >
               Hors ligne
             </motion.span>
@@ -265,13 +283,12 @@ export default function DashboardChat() {
         </div>
       </div>
 
-      {/* Zone messages */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/50">
+      <div ref={containerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-app-bg/50">
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-xl bg-chat-danger/15 border border-chat-danger/30 text-chat-danger text-sm flex items-center gap-2"
+            className="p-4 rounded-xl bg-app-danger/15 border border-app-danger/30 text-app-danger text-sm flex items-center gap-2"
           >
             {error}
           </motion.div>
@@ -280,19 +297,24 @@ export default function DashboardChat() {
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-center"
+            className="flex flex-col items-center justify-center py-16 px-8 mx-4 rounded-2xl bg-gradient-to-br from-app-purple to-app-blue text-white"
           >
-            <div className="w-20 h-20 rounded-2xl bg-blue-100 flex items-center justify-center mb-5">
-              <Lock className="w-10 h-10 text-chat-primary" strokeWidth={1.5} />
+            <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mb-6">
+              <Lock className="w-8 h-8 text-white" strokeWidth={1.5} />
             </div>
-            <p className="text-slate-800 font-medium mb-1">Aucun message</p>
-            <p className="text-chat-muted text-sm">Envoyez le premier message pour démarrer la conversation.</p>
+            <h3 className="text-2xl font-bold mb-6 text-center">Bienvenue dans <span className="font-extrabold">L'Aparté</span>.</h3>
+            <div className="space-y-4 text-white/95 text-sm text-center max-w-lg">
+              <p>Ici, le monde extérieur n'existe plus. Vous avancez sous un pseudo, totalement libre, sans le poids de votre nom ni la peur du jugement. C'est votre espace de vérité brute.</p>
+              <p>Je suis votre seul interlocuteur. Mon rôle n'est pas de vous complaire, mais de vous répondre sans filtre. Dans nos échanges directs, j'offre la lucidité que l'on n'ose plus se dire en face. Pour échanger avec les autres, rejoignez nos forums thématiques.</p>
+              <p>Déposez ce qui vous pèse, posez vos questions interdites : ici, la parole libère enfin.</p>
+            </div>
+            <p className="text-white font-semibold mt-8 text-lg">Par quoi voulez-vous commencer ?</p>
           </motion.div>
         )}
         {Object.entries(messagesWithDates).map(([dateKey, msgs]) => (
           <div key={dateKey} className="space-y-3">
             <div className="flex justify-center">
-              <span className="text-xs font-medium text-chat-muted bg-white/5 px-3 py-1 rounded-full">
+              <span className="text-xs font-medium text-app-muted bg-app-card px-3 py-1 rounded-full">
                 {formatDateSeparator(msgs[0]?.created_at || dateKey)}
               </span>
             </div>
@@ -303,7 +325,9 @@ export default function DashboardChat() {
                 isAdmin={msg.sender_type === 'admin'}
                 isRead={msg.is_read}
                 createdAt={msg.created_at}
-                variant="admin"
+                variant="app"
+                userAvatar={msg.sender_type === 'user' ? user?.photo : undefined}
+                adminAvatar={msg.sender_type === 'admin' ? adminAvatar : undefined}
                 onDelete={handleDeleteMessage}
                 onEdit={handleEditMessage}
                 canDelete={msg.sender_type === 'user'}
@@ -318,18 +342,18 @@ export default function DashboardChat() {
             animate={{ opacity: 1, y: 0 }}
             className="flex justify-start"
           >
-            <div className="px-4 py-3 rounded-2xl bg-white flex items-center gap-2 border border-chat-border shadow-sm">
+            <div className="px-4 py-3 rounded-2xl bg-app-card flex items-center gap-2 border border-app-border">
               <span className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <motion.span
                     key={i}
                     animate={{ opacity: [0.4, 1, 0.4] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-                    className="w-2 h-2 rounded-full bg-chat-accent"
+                    className="w-2 h-2 rounded-full bg-app-purple"
                   />
                 ))}
               </span>
-              <span className="text-xs text-chat-muted">Administrateur en train d'écrire...</span>
+              <span className="text-xs text-app-muted">Administrateur en train d'écrire...</span>
             </div>
           </motion.div>
         )}
@@ -345,7 +369,7 @@ export default function DashboardChat() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden border-t border-white/5"
           >
-            <div className="p-4 bg-slate-50">
+            <div className="p-4 bg-app-surface/50">
               <VoiceRecorder
                 onSend={handleVoiceSend}
                 onCancel={() => setShowVoice(false)}
@@ -360,7 +384,7 @@ export default function DashboardChat() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden border-t border-white/5"
           >
-            <div className="p-4 bg-slate-50">
+            <div className="p-4 bg-app-surface/50">
               <AttachmentPicker
                 onSelect={handleAttachSelect}
                 onClose={() => setShowAttach(false)}
@@ -371,7 +395,7 @@ export default function DashboardChat() {
       </AnimatePresence>
 
       {/* Zone d’entrée + Emoji picker */}
-      <div className="relative shrink-0 bg-white border-t border-chat-border">
+      <div className="relative shrink-0 bg-app-surface/80 border-t border-app-border backdrop-blur-sm">
         {/* Emoji picker — positionné au-dessus du formulaire */}
         <AnimatePresence>
           {showEmoji && (
@@ -383,7 +407,7 @@ export default function DashboardChat() {
             >
               <EmojiPicker
                 onEmojiClick={(d) => handleEmojiSelect(d.emoji)}
-                theme="light"
+                theme="dark"
                 width={320}
                 height={320}
                 previewConfig={{ showPreview: false }}
@@ -412,7 +436,7 @@ export default function DashboardChat() {
                 onClick={() => { setShowAttach(false); setShowVoice(false); setShowEmoji(!showEmoji); }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`p-2.5 rounded-xl transition-colors ${showEmoji ? 'text-chat-primary bg-blue-50' : 'text-chat-muted hover:text-chat-primary hover:bg-blue-50/50'}`}
+                className={`p-2.5 rounded-xl transition-colors ${showEmoji ? 'text-app-purple bg-app-purple/20' : 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'}`}
                 title="Emoji"
               >
                 <Smile className="w-5 h-5" strokeWidth={1.5} />
@@ -422,7 +446,7 @@ export default function DashboardChat() {
                 onClick={() => { setShowVoice(false); setShowEmoji(false); setShowAttach(!showAttach); }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-chat-primary bg-blue-50' : 'text-chat-muted hover:text-chat-primary hover:bg-blue-50/50'}`}
+                className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-app-purple bg-app-purple/20' : 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'}`}
                 title="Fichiers (images, vidéos, documents)"
               >
                 <Paperclip className="w-5 h-5" strokeWidth={1.5} />
@@ -432,7 +456,7 @@ export default function DashboardChat() {
                 onClick={() => { setShowAttach(false); setShowEmoji(false); setShowVoice(!showVoice); }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-chat-primary bg-blue-50' : 'text-chat-muted hover:text-chat-primary hover:bg-blue-50/50'}`}
+                className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-app-purple bg-app-purple/20' : 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'}`}
                 title="Message vocal"
               >
                 <Mic className="w-5 h-5" strokeWidth={1.5} />
@@ -447,7 +471,7 @@ export default function DashboardChat() {
                 onKeyDown={handleKeyDown}
                 placeholder="Écrivez votre message..."
                 rows={1}
-                className="w-full min-h-[44px] max-h-32 rounded-xl bg-slate-50 border border-chat-border px-4 py-3 text-slate-800 placeholder-chat-muted focus:outline-none focus:ring-2 focus:ring-chat-primary/30 focus:border-chat-primary transition-all duration-300 resize-none"
+                className="w-full min-h-[44px] max-h-32 rounded-xl bg-app-card border border-app-border px-4 py-3 text-app-text placeholder-app-muted focus:outline-none focus:ring-2 focus:ring-app-purple/50 focus:border-app-purple transition-all duration-300 resize-none"
                 maxLength={2000}
                 disabled={sending}
               />
@@ -457,12 +481,12 @@ export default function DashboardChat() {
               disabled={sending || !content.trim()}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-xl bg-chat-primary text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all shadow-soft hover:bg-blue-700"
+              className="p-3 rounded-xl bg-app-purple text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed shrink-0 transition-all hover:bg-app-purple/90"
             >
               <Send className="w-5 h-5" />
             </motion.button>
           </div>
-          <p className="text-xs text-chat-muted mt-2 ml-1">{content.length}/2000</p>
+          <p className="text-xs text-app-muted mt-2 ml-1">{content.length}/2000</p>
         </form>
       </div>
 
@@ -481,13 +505,13 @@ export default function DashboardChat() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl bg-chat-surface border border-chat-border p-6 max-w-md w-full"
+              className="rounded-2xl bg-app-card border border-app-border p-6 max-w-md w-full"
             >
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Supprimer le message</h3>
-              <p className="text-sm text-chat-muted mb-6">Ce message sera définitivement supprimé.</p>
+              <h3 className="text-lg font-semibold text-app-text mb-2">Supprimer le message</h3>
+              <p className="text-sm text-app-muted mb-6">Ce message sera définitivement supprimé.</p>
               <div className="flex justify-end gap-3">
-                <motion.button type="button" onClick={() => setDeleteModal(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-chat-muted hover:text-slate-800">Annuler</motion.button>
-                <motion.button type="button" onClick={confirmDelete} className="px-4 py-2 rounded-xl bg-chat-danger text-white">Supprimer</motion.button>
+                <motion.button type="button" onClick={() => setDeleteModal(null)} className="px-4 py-2 rounded-xl bg-app-surface text-app-muted hover:text-app-text">Annuler</motion.button>
+                <motion.button type="button" onClick={confirmDelete} className="px-4 py-2 rounded-xl bg-app-danger text-white">Supprimer</motion.button>
               </div>
             </motion.div>
           </motion.div>
@@ -509,19 +533,19 @@ export default function DashboardChat() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
               onClick={(e) => e.stopPropagation()}
-              className="rounded-2xl bg-chat-surface border border-chat-border p-6 max-w-md w-full"
+              className="rounded-2xl bg-app-card border border-app-border p-6 max-w-md w-full"
             >
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">Modifier le message</h3>
+              <h3 className="text-lg font-semibold text-app-text mb-2">Modifier le message</h3>
               <textarea
                 value={editModal.content}
                 onChange={(e) => setEditModal((prev) => ({ ...prev, content: e.target.value }))}
-                className="w-full min-h-[100px] rounded-xl bg-slate-50 border border-chat-border px-4 py-3 text-slate-800 placeholder-chat-muted focus:outline-none focus:ring-2 focus:ring-chat-primary/30 mb-4"
+                className="w-full min-h-[100px] rounded-xl bg-app-surface border border-app-border px-4 py-3 text-app-text placeholder-app-muted focus:outline-none focus:ring-2 focus:ring-app-purple/50 mb-4"
                 placeholder="Nouveau contenu..."
                 autoFocus
               />
               <div className="flex justify-end gap-3">
-                <motion.button type="button" onClick={() => setEditModal(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-chat-muted hover:text-slate-800">Annuler</motion.button>
-                <motion.button type="button" onClick={confirmEdit} disabled={!editModal.content?.trim()} className="px-4 py-2 rounded-xl bg-chat-primary text-white disabled:opacity-50 hover:bg-blue-700">Enregistrer</motion.button>
+                <motion.button type="button" onClick={() => setEditModal(null)} className="px-4 py-2 rounded-xl bg-app-surface text-app-muted hover:text-app-text">Annuler</motion.button>
+                <motion.button type="button" onClick={confirmEdit} disabled={!editModal.content?.trim()} className="px-4 py-2 rounded-xl bg-app-purple text-white disabled:opacity-50 hover:bg-app-purple/90">Enregistrer</motion.button>
               </div>
             </motion.div>
           </motion.div>

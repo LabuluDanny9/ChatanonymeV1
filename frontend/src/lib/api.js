@@ -11,7 +11,18 @@ export const getApiBaseUrl = () => api.defaults.baseURL || API_URL || (typeof wi
 
 /** Extrait un message d'erreur lisible (évite d'afficher un objet) */
 export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
-  const msg = err?.response?.data?.error;
+  const status = err?.response?.status;
+  if (status === 404) {
+    return 'Service indisponible. Réessayez plus tard ou contactez l\'administrateur.';
+  }
+  if (status === 503) {
+    const msg = err?.response?.data?.error;
+    return typeof msg === 'string' ? msg : 'Service temporairement indisponible. Réessayez plus tard.';
+  }
+  if (status >= 500) return 'Erreur serveur. Réessayez plus tard.';
+  const data = err?.response?.data;
+  if (typeof data === 'string') return data;
+  const msg = data?.error ?? data?.message;
   if (typeof msg === 'string') return msg;
   if (msg && typeof msg === 'object' && msg.message) return msg.message;
   return fallback;
@@ -21,6 +32,43 @@ const api = axios.create({
   baseURL: API_URL || '',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+});
+
+// Intercepteur : s'assurer que le token est toujours envoyé pour les routes protégées
+api.interceptors.request.use((config) => {
+  const url = (config.baseURL || '') + (config.url || '');
+  const isApiCall = url.includes('/api/');
+  const needsAuth = isApiCall && (
+    url.includes('/api/admin') ||
+    url.includes('/reply-private') ||
+    url.includes('/api/messages') ||
+    url.includes('/api/users') ||
+    url.includes('/comments') // delete, like, create comment
+  );
+  if (needsAuth && !config.headers.Authorization) {
+    try {
+      const adminStored = localStorage.getItem('chatanonyme_admin');
+      const userStored = localStorage.getItem('chatanonyme_user');
+      let token = null;
+      if (url.includes('/api/admin')) {
+        if (adminStored) {
+          const parsed = JSON.parse(adminStored);
+          token = parsed?.token;
+        }
+      } else {
+        if (userStored) {
+          const parsed = JSON.parse(userStored);
+          token = parsed?.token;
+        }
+        if (!token && adminStored) {
+          const parsed = JSON.parse(adminStored);
+          token = parsed?.token;
+        }
+      }
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    } catch {}
+  }
+  return config;
 });
 
 // Token anonyme (stocké en mémoire ou localStorage)

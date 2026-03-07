@@ -3,14 +3,17 @@
  * Pour une protection renforcée, utiliser une lib dédiée (e.g. DOMPurify côté client).
  */
 
+/**
+ * Échappe uniquement les caractères dangereux pour XSS (< > & ").
+ * Les apostrophes (') sont conservées pour un affichage correct en français (l'aise, L'Aparté, etc.).
+ */
 function escapeHtml(text) {
   if (typeof text !== 'string') return text;
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/"/g, '&quot;');
 }
 
 function sanitizeBody(req, res, next) {

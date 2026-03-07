@@ -1,12 +1,23 @@
 /**
- * Welcome — Entrée fullscreen hero
- * Confidential. Minimal. Intelligent.
+ * Landing Page — Réseau social anonyme
+ * Hero • Features • Community • Footer
+ * Design: Reddit + Discord + Twitter + SaaS
  */
 
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Lock, ArrowRight } from 'lucide-react';
+import {
+  Lock,
+  ArrowRight,
+  Shield,
+  MessageCircle,
+  FileText,
+  Users,
+  MessageSquare,
+  TrendingUp,
+  Hash,
+} from 'lucide-react';
 
 const fadeUp = { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4 } };
 
@@ -15,21 +26,21 @@ export default function Welcome() {
 
   if (isLoggedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-chat-bg">
+      <div className="min-h-screen flex items-center justify-center bg-app-bg">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           className="text-center"
         >
-          <p className="text-chat-muted mb-6">Bienvenue{user?.pseudo ? `, ${user.pseudo}` : ''}</p>
+          <p className="text-app-muted mb-6">Bienvenue{user?.pseudo ? `, ${user.pseudo}` : ''}</p>
           <Link to={admin ? '/admin/dashboard' : '/dashboard'}>
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 rounded-xl bg-chat-primary text-white font-semibold shadow-soft hover:bg-blue-700 transition-all duration-300"
+              className="px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow hover:shadow-app-glow transition-all duration-300"
             >
-              {admin ? 'Tableau de bord' : 'Conversation sécurisée'}
+              {admin ? 'Tableau de bord' : 'Accéder au fil'}
             </motion.button>
           </Link>
         </motion.div>
@@ -38,86 +49,218 @@ export default function Welcome() {
   }
 
   return (
-    <div className="min-h-screen flex items-center relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-sky-50/50">
-      {/* Cercles décoratifs bleus */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.15, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="absolute -right-24 -top-24 w-[400px] h-[400px] rounded-full border-2 border-blue-200"
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 0.1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.4 }}
-          className="absolute right-1/4 top-1/3 w-[280px] h-[280px] rounded-full border border-blue-100"
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.08 }}
-          transition={{ duration: 1, delay: 0.6 }}
-          className="absolute right-0 bottom-1/4 w-64 h-64 rounded-full bg-blue-100"
-        />
-      </div>
+    <div className="min-h-screen bg-app-bg text-app-text font-sans">
+      {/* Hero */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-app-bg via-app-surface/50 to-app-bg" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-app-purple/20 via-transparent to-transparent" />
+        <div className="absolute top-1/4 left-1/2 w-96 h-96 bg-app-purple/10 rounded-full blur-3xl -translate-x-1/2" />
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-6 py-20 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-8"
+          >
+            <motion.img
+              src="/logo.png"
+              alt="ChatAnonyme"
+              className="h-28 sm:h-36 w-auto mx-auto drop-shadow-2xl"
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight mb-6"
+          >
+            <span className="text-app-text">Parlez librement.</span>
+            <br />
+            <span className="bg-gradient-to-r from-app-purple to-app-blue bg-clip-text text-transparent">
+              Restez anonyme.
+            </span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="text-app-muted text-lg sm:text-xl max-w-2xl mx-auto mb-12"
+          >
+            Communiquez sans filtre. Discutez dans les forums. Partagez en toute confidentialité.
+            Votre identité reste protégée.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <Link to="/inscription">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow hover:shadow-app-glow transition-all"
+              >
+                Créer un compte <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </Link>
+            <Link to="/connexion">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-app-card border border-app-border text-app-text font-semibold hover:border-app-purple/50 hover:bg-app-surface transition-all"
+              >
+                Se connecter
+              </motion.button>
+            </Link>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-10 flex items-center justify-center gap-2 text-app-muted text-sm"
+          >
+            <Lock className="w-4 h-4" strokeWidth={1.5} />
+            Session chiffrée AES-256
+          </motion.div>
+        </div>
+      </section>
 
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-6 text-center">
+      {/* Features */}
+      <section className="relative py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-center mb-16"
+          >
+            <span className="text-app-text">Pourquoi </span>
+            <span className="text-app-purple">ChatAnonyme</span>
+            <span className="text-app-text"> ?</span>
+          </motion.h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: Shield, title: 'Publication anonyme', desc: 'Publiez sans révéler votre identité.' },
+              { icon: MessageCircle, title: 'Communication sécurisée', desc: 'Messages privés chiffrés.' },
+              { icon: FileText, title: 'Forum de discussions', desc: 'Échangez et débattre librement.' },
+              { icon: Users, title: 'Protection de la vie privée', desc: 'Vos données restent confidentielles.' },
+            ].map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -4 }}
+                className="p-6 rounded-2xl bg-app-card/50 border border-app-border backdrop-blur-sm hover:border-app-purple/30 transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-app-purple/20 flex items-center justify-center mb-4">
+                  <f.icon className="w-6 h-6 text-app-purple" strokeWidth={1.5} />
+                </div>
+                <h3 className="font-semibold text-app-text mb-2">{f.title}</h3>
+                <p className="text-sm text-app-muted">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Community / Trending */}
+      <section className="relative py-24 px-6 bg-app-surface/30">
+        <div className="max-w-6xl mx-auto">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-center mb-4"
+          >
+            <span className="text-app-text">Rejoignez la </span>
+            <span className="text-app-purple">communauté</span>
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-app-muted text-center mb-12 max-w-xl mx-auto"
+          >
+            Sujets tendance, débats d'idées, confessions anonymes, tech et société.
+          </motion.p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Discussion générale', icon: MessageSquare },
+              { label: 'Idées et débats', icon: Hash },
+              { label: 'Confessions anonymes', icon: Shield },
+              { label: 'Tech & société', icon: TrendingUp },
+            ].map((c, i) => (
+              <motion.div
+                key={c.label}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="p-5 rounded-xl bg-app-card/50 border border-app-border hover:border-app-purple/30 transition-all flex items-center gap-3"
+              >
+                <div className="w-10 h-10 rounded-lg bg-app-purple/20 flex items-center justify-center shrink-0">
+                  <c.icon className="w-5 h-5 text-app-purple" strokeWidth={1.5} />
+                </div>
+                <span className="font-medium text-app-text">{c.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="relative py-24 px-6">
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
-        >
-          <img src="/logo.png" alt="ChatAnonyme" className="h-16 w-auto mx-auto" />
-        </motion.div>
-        <motion.h1
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-800 leading-tight tracking-tight mb-4"
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-2xl mx-auto text-center p-12 rounded-2xl bg-gradient-to-br from-app-purple/20 to-app-blue/10 border border-app-purple/30"
         >
-          Communiquez librement.
-          <br />
-          <span className="text-chat-primary">En toute confidentialité.</span>
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.25 }}
-          className="text-chat-muted text-lg mb-12 max-w-md mx-auto"
-        >
-          Plateforme sécurisée d'échange anonyme.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
-        >
-          <Link to="/connexion">
+          <h3 className="text-2xl font-bold text-app-text mb-4">Prêt à commencer ?</h3>
+          <p className="text-app-muted mb-8">Créez votre compte en quelques secondes</p>
+          <Link to="/inscription">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-chat-primary text-white font-semibold shadow-soft hover:bg-blue-700 transition-all duration-300"
+              className="px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow"
             >
-              Entrer anonymement <ArrowRight className="w-5 h-5" />
+              Créer un compte
             </motion.button>
           </Link>
         </motion.div>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 text-sm text-chat-muted flex flex-col items-center justify-center gap-3"
-        >
-          <span className="flex items-center gap-2">
-            <Lock className="w-4 h-4" strokeWidth={1.5} />
-            Session chiffrée AES-256
-          </span>
-          <Link to="/admin" className="text-chat-muted hover:text-chat-primary transition-colors text-xs">
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-app-border py-12 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="" className="h-8 w-auto" />
+            <span className="font-bold text-app-text">ChatAnonyme</span>
+          </div>
+          <nav className="flex flex-wrap gap-6 text-sm">
+            <Link to="/topics" className="text-app-muted hover:text-app-purple transition-colors">
+              Forum
+            </Link>
+            <a href="#" className="text-app-muted hover:text-app-purple transition-colors">
+              Conditions d'utilisation
+            </a>
+            <a href="#" className="text-app-muted hover:text-app-purple transition-colors">
+              Politique de confidentialité
+            </a>
+            <a href="#" className="text-app-muted hover:text-app-purple transition-colors">
+              Support
+            </a>
+          </nav>
+          <Link to="/admin" className="text-xs text-app-muted hover:text-app-purple transition-colors">
             Connexion administrateur
           </Link>
-        </motion.p>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }

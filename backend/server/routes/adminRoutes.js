@@ -21,6 +21,7 @@ router.delete('/messages/:id', adminController.deleteMessage);
 router.patch('/messages/:id', adminController.updateMessage);
 router.get('/topics', adminController.listTopics);
 router.post('/topics', adminController.createTopic);
+router.post('/topics/comments/:commentId/reply-private', adminController.replyPrivateToComment);
 router.put('/topics/:id', adminController.updateTopic);
 router.delete('/topics/:id', adminController.deleteTopic);
 router.post('/broadcast', adminController.sendBroadcast);

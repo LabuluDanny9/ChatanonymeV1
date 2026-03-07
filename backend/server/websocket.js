@@ -49,6 +49,13 @@ function getIo(httpServer) {
       socket.join('admin');
     }
 
+    socket.on('topic:join', (topicId) => {
+      if (topicId) socket.join(`topic:${topicId}`);
+    });
+    socket.on('topic:leave', (topicId) => {
+      if (topicId) socket.leave(`topic:${topicId}`);
+    });
+
     socket.on('disconnect', () => {});
   });
 

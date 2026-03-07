@@ -16,8 +16,10 @@ module.exports = function (app) {
   app.use(
     '/ws',
     createProxyMiddleware({
-      target: target.replace(/^http/, 'ws'),
+      target,
       ws: true,
+      changeOrigin: true,
+      secure: false,
     })
   );
 };

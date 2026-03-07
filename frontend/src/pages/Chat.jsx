@@ -12,9 +12,7 @@ import api from '../lib/api';
 import { io } from 'socket.io-client';
 import ChatBubble from '../components/ChatBubble';
 import { useToast } from '../context/ToastContext';
-
-const API_URL = process.env.REACT_APP_API_URL || '';
-const WS_PATH = process.env.REACT_APP_WS_PATH || '/ws';
+import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
 
 export default function Chat() {
   const { user } = useAuth();
@@ -54,7 +52,7 @@ export default function Chat() {
     if (!user) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
-    const socket = io(API_URL, { path: WS_PATH, auth: { token } });
+    const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socket.on('message:new', (payload) => {
       setMessages((prev) => [...prev, payload.message]);
       setTimeout(scrollToBottom, 100);
@@ -155,7 +153,7 @@ export default function Chat() {
         {messages.map((msg) => (
           <ChatBubble
             key={msg.id}
-            message={msg.content}
+            message={msg}
             isAdmin={msg.sender_type === 'admin'}
             isRead={msg.is_read}
             createdAt={msg.created_at}

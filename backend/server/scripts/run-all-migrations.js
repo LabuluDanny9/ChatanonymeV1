@@ -20,7 +20,7 @@ async function run() {
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: dbUrl,
-    ssl: dbUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false,
+    ssl: (dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')) ? { rejectUnauthorized: false } : false,
   });
 
   const migrationsDir = path.join(__dirname, '../migrations');

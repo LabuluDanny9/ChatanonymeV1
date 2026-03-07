@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless - Backend API
- * Toutes les requêtes /api/* sont routées vers Express.
+ * Toutes les requêtes /api/* sont routées vers Express via le rewrite vercel.json.
  * Note: WebSocket (Socket.IO) ne fonctionne pas en serverless.
  */
 

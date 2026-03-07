@@ -24,7 +24,7 @@ if (useJson) {
 
   const seedTopics = require('../scripts/seedTopics');
   const initStore = () => {
-    const defaultData = { users: [], admins: [], conversations: [], messages: [], topics: [], audit_logs: [], broadcasts: [] };
+    const defaultData = { users: [], admins: [], conversations: [], messages: [], topics: [], topic_comments: [], audit_logs: [], broadcasts: [] };
     let data = defaultData;
     if (fs.existsSync(dbPath)) {
       try {
@@ -49,6 +49,10 @@ if (useJson) {
       fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
     }
     if (!data.topics) data.topics = [];
+    if (!data.topic_comments) {
+      data.topic_comments = [];
+      fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+    }
   };
   initStore();
 
@@ -125,6 +129,14 @@ if (useJson) {
       }
       if (sql.includes('SELECT 1 FROM admins')) {
         return { rows: data.admins.length ? [{}] : [] };
+      }
+      if (sql.includes('SELECT photo FROM admins') && sql.includes('LIMIT 1')) {
+        const a = (data.admins || [])[0];
+        return { rows: a ? [{ photo: a.photo || '' }] : [] };
+      }
+      if (sql.includes('SELECT COUNT(*)') && sql.includes('FROM admins')) {
+        const count = (data.admins || []).length;
+        return { rows: [{ count, c: count }] };
       }
       if (sql.includes('INSERT INTO admins') && sql.includes('photo')) {
         const id = uuid();
@@ -310,6 +322,53 @@ if (useJson) {
         return { rows: [{ count, c: count }] };
       }
 
+      if (sql.includes('INSERT INTO topic_comments')) {
+        if (!data.topic_comments) data.topic_comments = [];
+        const id = uuid();
+        const comment = {
+          id, topic_id: $1, author_id: $2, author_type: $3, author_name: $4,
+          author_photo: $5 || null, parent_id: $6 || null, content: $7 || '', likes_count: 0,
+          created_at: new Date().toISOString(),
+        };
+        data.topic_comments.push(comment);
+        save(data);
+        return { rows: [comment] };
+      }
+      if (sql.includes('FROM topic_comments WHERE topic_id') && sql.includes('ORDER BY')) {
+        const rows = (data.topic_comments || []).filter((c) => c.topic_id === $1).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        return { rows };
+      }
+      if (sql.includes('UPDATE topic_comments SET likes_count') && sql.includes('WHERE id')) {
+        const c = (data.topic_comments || []).find((x) => x.id === $1);
+        if (c) c.likes_count = (c.likes_count || 0) + 1;
+        save(data);
+        return { rows: c ? [c] : [] };
+      }
+      if (sql.includes('SELECT COUNT(*)') && sql.includes('FROM topic_comments') && sql.includes('topic_id')) {
+        const count = (data.topic_comments || []).filter((c) => c.topic_id === $1).length;
+        return { rows: [{ count, c: count }] };
+      }
+      if (sql.includes('SELECT * FROM topic_comments WHERE id')) {
+        const c = (data.topic_comments || []).find((x) => x.id === $1);
+        return { rows: c ? [c] : [] };
+      }
+      if (sql.includes('DELETE FROM topic_comments') && sql.includes('WHERE id')) {
+        const toDelete = new Set([$1]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const c of data.topic_comments || []) {
+            if (toDelete.has(c.parent_id) && !toDelete.has(c.id)) {
+              toDelete.add(c.id);
+              changed = true;
+            }
+          }
+        }
+        data.topic_comments = (data.topic_comments || []).filter((c) => !toDelete.has(c.id));
+        save(data);
+        return { rows: [], rowCount: toDelete.size };
+      }
+
       return { rows: [] };
     },
   };
@@ -319,8 +378,8 @@ if (useJson) {
     connectionString: dbUrl,
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-    ssl: dbUrl.includes('supabase.co') ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+    ssl: (dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')) ? { rejectUnauthorized: false } : false,
   });
   pgPool.on('error', (err) => console.error('Erreur PostgreSQL:', err.message));
   db = pgPool;

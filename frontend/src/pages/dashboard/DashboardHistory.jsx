@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MessageCircle, FileText, Search } from 'lucide-react';
 import api from '../../lib/api';
+import { decodeHtmlEntities } from '../../lib/textUtils';
 import Skeleton from '../../components/ui/Skeleton';
 
 export default function DashboardHistory() {
@@ -50,30 +51,30 @@ export default function DashboardHistory() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <h1 className="text-2xl font-bold text-corum-offwhite">Historique</h1>
-        <p className="text-corum-gray text-sm mt-1">Conversations et sujets traités</p>
+        <h1 className="text-2xl font-bold text-app-text">Historique</h1>
+        <p className="text-app-muted text-sm mt-1">Conversations et sujets traités</p>
       </motion.div>
 
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-corum-gray" strokeWidth={1.5} />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-app-muted" strokeWidth={1.5} />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher..."
-          className="w-full pl-12 pr-4 py-3 rounded-xl bg-corum-night/60 border border-white/10 text-corum-offwhite placeholder-corum-gray focus:outline-none focus:ring-2 focus:ring-corum-turquoise/50"
+          className="w-full pl-12 pr-4 py-3 rounded-xl bg-app-card border border-app-border text-app-text placeholder-app-muted focus:outline-none focus:ring-2 focus:ring-app-purple/50"
         />
       </div>
 
       <div className="space-y-6">
         <section>
-          <h2 className="text-lg font-semibold text-corum-offwhite mb-4 flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-corum-turquoise" strokeWidth={1.5} />
+          <h2 className="text-lg font-semibold text-app-text mb-4 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-app-purple" strokeWidth={1.5} />
             Conversations
           </h2>
           {filteredMessages.length === 0 ? (
-            <div className="rounded-2xl bg-corum-night/60 border border-white/10 p-8 text-center">
-              <p className="text-corum-gray">Aucune conversation</p>
+            <div className="rounded-2xl bg-app-card/50 border border-app-border p-8 text-center">
+              <p className="text-app-muted">Aucune conversation</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -82,14 +83,14 @@ export default function DashboardHistory() {
                   key={msg.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="rounded-xl bg-corum-night/60 border border-white/10 p-4 flex items-start gap-3"
+                  className="rounded-xl bg-app-card/50 border border-app-border p-4 flex items-start gap-3"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-corum-turquoise/20 flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-5 h-5 text-corum-turquoise" strokeWidth={1.5} />
+                  <div className="w-10 h-10 rounded-xl bg-app-purple/20 flex items-center justify-center shrink-0">
+                    <MessageCircle className="w-5 h-5 text-app-purple" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-corum-offwhite line-clamp-2">{msg.content}</p>
-                    <p className="text-xs text-corum-gray mt-1">
+                    <p className="text-sm text-app-text line-clamp-2">{decodeHtmlEntities(msg.content || '')}</p>
+                    <p className="text-xs text-app-muted mt-1">
                       {new Date(msg.created_at).toLocaleString('fr-FR')} •{' '}
                       {msg.sender_type === 'admin' ? 'Admin' : 'Vous'}
                     </p>
@@ -101,13 +102,13 @@ export default function DashboardHistory() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-corum-offwhite mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-corum-turquoise" strokeWidth={1.5} />
+          <h2 className="text-lg font-semibold text-app-text mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-app-purple" strokeWidth={1.5} />
             Sujets
           </h2>
           {topics.length === 0 ? (
-            <div className="rounded-2xl bg-corum-night/60 border border-white/10 p-8 text-center">
-              <p className="text-corum-gray">Aucun sujet</p>
+            <div className="rounded-2xl bg-app-card/50 border border-app-border p-8 text-center">
+              <p className="text-app-muted">Aucun sujet</p>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -115,10 +116,10 @@ export default function DashboardHistory() {
                 <Link key={t.id} to={`/dashboard/topics/${t.id}`}>
                   <motion.div
                     whileHover={{ y: -2 }}
-                    className="rounded-xl bg-corum-night/60 border border-white/10 p-4 h-full hover:border-corum-turquoise/30 transition-colors"
+                    className="rounded-xl bg-app-card/50 border border-app-border p-4 h-full hover:border-app-purple/30 transition-colors"
                   >
-                    <h3 className="font-medium text-corum-offwhite line-clamp-2">{t.title}</h3>
-                    <p className="text-xs text-corum-gray mt-1">
+                    <h3 className="font-medium text-app-text line-clamp-2">{t.title}</h3>
+                    <p className="text-xs text-app-muted mt-1">
                       {new Date(t.published_at).toLocaleDateString('fr-FR')}
                     </p>
                   </motion.div>

@@ -17,6 +17,19 @@ export default function AdminLogin() {
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [adminCount, setAdminCount] = useState(0);
+
+  useEffect(() => {
+    api.get('/api/auth/admin/can-register')
+      .then(({ data }) => {
+        setAdminCount(data.count ?? 0);
+        // Si aucun admin, afficher directement le formulaire d'inscription
+        if (data.count === 0) {
+          setMode('register');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
 
@@ -60,9 +73,9 @@ export default function AdminLogin() {
       if (data.token && data.admin && setAdminSession) {
         setAdminSession(data.token, data.admin);
       }
-      setLoading(false);
     } catch (err) {
       setError(getErrorMessage(err, 'Erreur lors de la création'));
+    } finally {
       setLoading(false);
     }
   };
@@ -134,7 +147,7 @@ export default function AdminLogin() {
                   mode === 'register' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <UserPlus className="w-4 h-4" /> Créer un compte
+                <UserPlus className="w-4 h-4" /> Créer un compte {adminCount > 0 && `(${adminCount}/3)`}
               </button>
             </div>
 
@@ -199,7 +212,7 @@ export default function AdminLogin() {
                   transition={{ duration: 0.2 }}
                 >
                   <h2 className="text-xl font-bold text-slate-800 mb-1">Créer un compte administrateur</h2>
-                  <p className="text-sm text-chat-muted mb-6">Première installation ? Créez le compte admin de la plateforme.</p>
+                  <p className="text-sm text-chat-muted mb-6">La plateforme peut avoir jusqu'à 3 administrateurs. Créez un compte pour rejoindre l'équipe.</p>
 
                   <form onSubmit={handleRegister} className="space-y-5">
                     {error && (

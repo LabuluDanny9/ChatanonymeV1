@@ -17,7 +17,7 @@ async function authUserOrAdmin(req, res, next) {
       const user = await User.findById(decoded.userId);
       if (!user) return res.status(401).json({ error: 'Utilisateur introuvable' });
       if (user.status === 'banned') return res.status(403).json({ error: 'Compte désactivé' });
-      req.user = { id: user.id, pseudo: user.pseudo, type: 'user' };
+      req.user = { id: user.id, pseudo: user.pseudo, photo: user.photo, type: 'user' };
     } else if (decoded.type === 'admin') {
       const admin = await Admin.findById(decoded.adminId);
       if (!admin) return res.status(401).json({ error: 'Administrateur introuvable' });

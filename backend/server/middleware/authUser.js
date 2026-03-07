@@ -31,6 +31,7 @@ async function authUser(req, res, next) {
     req.user = {
       id: user.id,
       pseudo: user.pseudo,
+      photo: user.photo,
       type: 'user',
     };
     next();

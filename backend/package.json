@@ -12,7 +12,10 @@
     "reset-db": "node server/scripts/reset-db.js",
     "seed-admin": "node server/scripts/insertAdmin.js",
     "seed-demo": "node server/scripts/seed-demo-data.js",
-    "create-admin": "node server/scripts/createAdmin.js"
+    "create-admin": "node server/scripts/createAdmin.js",
+    "clear-admins": "node server/scripts/clear-admins.js",
+    "clear-admins:json": "node server/scripts/clear-admins.js --json",
+    "clear-admins-and-create": "node server/scripts/clear-admins-and-create.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

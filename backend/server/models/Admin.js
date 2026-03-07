@@ -42,6 +42,16 @@ const Admin = {
     const { rows } = await pool.query('SELECT 1 FROM admins LIMIT 1');
     return rows.length > 0;
   },
+
+  async count() {
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM admins');
+    return rows[0]?.count ?? 0;
+  },
+
+  async getFirstPhoto() {
+    const { rows } = await pool.query('SELECT photo FROM admins LIMIT 1');
+    return rows[0]?.photo || null;
+  },
 };
 
 module.exports = Admin;
