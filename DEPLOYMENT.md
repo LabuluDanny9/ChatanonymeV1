@@ -16,6 +16,7 @@
 2. **SQL Editor** → **New query**
 3. Copie-colle le contenu de `backend/server/scripts/init-db-complet.sql`
 4. Clique **Run** — les tables `users`, `admins`, `conversations`, etc. seront créées
+5. (Optionnel) Exécuter `backend/server/scripts/seed-user-admin.sql` pour créer un utilisateur **demo** (mdp: Demo123!) et un admin **admin@laparte.app** (mdp: Admin123!)
 
 ### 2. Variables d'environnement sur Vercel
 

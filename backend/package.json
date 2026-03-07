@@ -12,6 +12,7 @@
     "reset-db": "node server/scripts/reset-db.js",
     "seed-admin": "node server/scripts/insertAdmin.js",
     "seed-demo": "node server/scripts/seed-demo-data.js",
+    "seed-user-admin": "node server/scripts/run-seed-user-admin.js",
     "create-admin": "node server/scripts/createAdmin.js",
     "clear-admins": "node server/scripts/clear-admins.js",
     "clear-admins:json": "node server/scripts/clear-admins.js --json",
