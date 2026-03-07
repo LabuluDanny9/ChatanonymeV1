@@ -155,6 +155,12 @@ async function canRegisterAdmin(req, res, next) {
     const count = await Admin.count();
     return res.json({ canRegister: count < MAX_ADMINS, count, max: MAX_ADMINS });
   } catch (err) {
+    console.error('[canRegisterAdmin]', err?.message, err?.code);
+    if (isDbConnectionError(err) || isDbSchemaError(err)) {
+      return res.status(503).json({
+        error: 'Base de données indisponible. Exécutez init-db-complet.sql dans Supabase et configurez DATABASE_URL sur Vercel.',
+      });
+    }
     next(err);
   }
 }
@@ -190,6 +196,12 @@ async function registerAdmin(req, res, next) {
       admin: { id: admin.id, email: admin.email, photo: admin.photo },
     });
   } catch (err) {
+    console.error('[registerAdmin]', err?.message, err?.code);
+    if (isDbConnectionError(err) || isDbSchemaError(err)) {
+      return res.status(503).json({
+        error: 'Base de données indisponible. Exécutez init-db-complet.sql dans Supabase et configurez DATABASE_URL sur Vercel.',
+      });
+    }
     next(err);
   }
 }

@@ -23,12 +23,13 @@ export default function AdminLogin() {
     api.get('/api/auth/admin/can-register')
       .then(({ data }) => {
         setAdminCount(data.count ?? 0);
-        // Si aucun admin, afficher directement le formulaire d'inscription
-        if (data.count === 0) {
-          setMode('register');
-        }
+        if (data.count === 0) setMode('register');
       })
-      .catch(() => {});
+      .catch((err) => {
+        // 503 = DB non configurée → afficher formulaire quand même (login/register)
+        if (err?.response?.status !== 503) return;
+        setError(err?.response?.data?.error || 'Base de données indisponible. Vérifiez la configuration.');
+      });
   }, []);
 
   if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
