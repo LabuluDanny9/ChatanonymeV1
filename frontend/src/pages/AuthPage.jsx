@@ -99,7 +99,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
           <motion.img
             src="/logo.png"
             alt="L'Aparté"
-            className="h-32 sm:h-40 w-auto drop-shadow-2xl mb-8"
+            className="h-48 sm:h-56 md:h-64 w-auto drop-shadow-2xl mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -149,7 +149,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
         >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <img src="/logo.png" alt="L'Aparté" className="h-20 w-auto mx-auto drop-shadow-lg mb-4" />
+            <img src="/logo.png" alt="L'Aparté" className="h-28 sm:h-36 w-auto mx-auto drop-shadow-lg mb-4" />
             <h1 className="text-xl font-bold text-chat-offwhite mb-1">Bienvenue dans L'Aparté</h1>
             <p className="text-sm text-corum-gray">Par quoi voulez-vous commencer ?</p>
           </div>
