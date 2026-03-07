@@ -93,34 +93,47 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
 
   return (
     <div className="min-h-screen flex">
-      {/* GAUCHE — Branding (40%) */}
+      {/* GAUCHE — Logo grand format + Texte de bienvenue (40%) */}
       <aside className="hidden lg:flex lg:w-[40%] flex-col justify-between bg-corum-night p-12 relative overflow-hidden">
-        <div>
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ChatAnonyme" className="h-14 w-auto" />
-            <h1 className="text-2xl font-bold text-chat-offwhite tracking-tight">ChatAnonyme</h1>
-          </div>
-          <p className="text-sm text-corum-gray mt-1">Plateforme sécurisée</p>
-        </div>
         <div className="relative z-10">
-          <motion.h2
+          <motion.img
+            src="/logo.png"
+            alt="L'Aparté"
+            className="h-32 sm:h-40 w-auto drop-shadow-2xl mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-2xl font-bold text-corum-offwhite leading-tight max-w-sm"
-          >
-            Accès sécurisé à votre espace confidentiel.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.5 }}
+          />
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-corum-gray mt-4 flex items-center gap-2"
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight mb-6"
           >
-            <Shield className="w-5 h-5 text-corum-turquoise/80" strokeWidth={1.5} />
-            Session sécurisée • Chiffrement AES-256
-          </motion.p>
+            <span className="text-corum-offwhite">Bienvenue dans </span>
+            <span className="text-corum-turquoise">L'Aparté.</span>
+          </motion.h1>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="text-corum-gray text-sm sm:text-base space-y-4 max-w-md leading-relaxed"
+          >
+            <p>Ici, le monde extérieur n'existe plus. Vous avancez sous un pseudo, totalement libre, sans le poids de votre nom ni la peur du jugement. C'est votre espace de vérité brute.</p>
+            <p>Je suis votre seul interlocuteur. Mon rôle n'est pas de vous complaire, mais de vous répondre sans filtre. Dans nos échanges directs, j'offre la lucidité que l'on n'ose plus se dire en face. Pour échanger avec les autres, rejoignez nos forums thématiques.</p>
+            <p>Déposez ce qui vous pèse, posez vos questions interdites : ici, la parole libère enfin.</p>
+            <p className="text-corum-offwhite font-semibold pt-2">Par quoi voulez-vous commencer ?</p>
+          </motion.div>
         </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="relative z-10 flex items-center gap-2 text-corum-gray text-sm mt-8"
+        >
+          <Shield className="w-5 h-5 text-corum-turquoise/80" strokeWidth={1.5} />
+          Session sécurisée • Chiffrement AES-256
+        </motion.div>
         {/* Cercles décoratifs */}
         <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full border border-corum-turquoise/20" />
         <div className="absolute right-10 bottom-1/4 w-32 h-32 rounded-full border border-corum-turquoise/10" />
@@ -136,11 +149,9 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
         >
           {/* Mobile branding */}
           <div className="lg:hidden text-center mb-8">
-            <div className="flex items-center gap-2 justify-center">
-              <img src="/logo.png" alt="ChatAnonyme" className="h-12 w-auto" />
-              <h1 className="text-xl font-bold text-chat-offwhite">ChatAnonyme</h1>
-            </div>
-            <p className="text-xs text-corum-gray mt-1">Accès sécurisé</p>
+            <img src="/logo.png" alt="L'Aparté" className="h-20 w-auto mx-auto drop-shadow-lg mb-4" />
+            <h1 className="text-xl font-bold text-chat-offwhite mb-1">Bienvenue dans L'Aparté</h1>
+            <p className="text-sm text-corum-gray">Par quoi voulez-vous commencer ?</p>
           </div>
 
           {/* Card — shake on error */}
