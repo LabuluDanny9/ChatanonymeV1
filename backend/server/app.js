@@ -42,6 +42,42 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'silencehub' }));
 
+// Diagnostic complet - statut config pour résoudre les 500
+app.get('/api/debug-setup', async (req, res) => {
+  const checks = {
+    DATABASE_URL: !!process.env.DATABASE_URL,
+    JWT_SECRET: !!process.env.JWT_SECRET,
+    CORS_ORIGIN: !!process.env.CORS_ORIGIN,
+    VERCEL: !!process.env.VERCEL,
+    NODE_ENV: process.env.NODE_ENV || 'development',
+  };
+  let dbOk = false;
+  let dbError = null;
+  if (checks.DATABASE_URL) {
+    try {
+      const { pool } = require('./config/database');
+      await pool.query('SELECT 1');
+      const r = await pool.query('SELECT COUNT(*)::int as c FROM users');
+      dbOk = true;
+      checks.usersTable = true;
+      checks.usersCount = r?.rows?.[0]?.c ?? 0;
+    } catch (e) {
+      dbError = e?.message || String(e);
+      checks.usersTable = false;
+    }
+  }
+  const ok = checks.DATABASE_URL && checks.JWT_SECRET && dbOk;
+  return res.status(ok ? 200 : 503).json({
+    ok,
+    checks,
+    dbError: dbError || undefined,
+    hint: !checks.DATABASE_URL ? 'Ajoutez DATABASE_URL (pooler Supabase port 6543)' :
+      !checks.JWT_SECRET ? 'Ajoutez JWT_SECRET' :
+      dbError?.includes('does not exist') ? 'Exécutez init-db-complet.sql dans Supabase SQL Editor' :
+      dbError ? `DB: ${dbError}` : undefined,
+  });
+});
+
 // Diagnostic DB - pour identifier les erreurs d'inscription en production
 app.get('/api/health-db', async (req, res) => {
   try {

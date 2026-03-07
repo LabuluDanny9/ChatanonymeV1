@@ -48,6 +48,11 @@ async function register(req, res, next) {
         error: 'Base de données non configurée. Exécutez init-db-complet.sql dans Supabase (SQL Editor) et configurez DATABASE_URL sur Vercel.',
       });
     }
+    if (isConfigError(err)) {
+      return res.status(503).json({
+        error: 'JWT_SECRET manquant. Configurez JWT_SECRET dans Vercel > Settings > Environment Variables.',
+      });
+    }
     next(err);
   }
 }
@@ -64,6 +69,11 @@ function isDbSchemaError(err) {
   return code === '42P01' || code === 'DATABASE_URL_REQUIRED'
     || (msg.includes('relation') && msg.includes('does not exist'))
     || msg.includes('DATABASE_URL manquant');
+}
+
+function isConfigError(err) {
+  const msg = (err?.message || '').toLowerCase();
+  return msg.includes('jwt') || msg.includes('secret') || msg.includes('secretorkey');
 }
 
 // POST /api/auth/login - Login unifié (pseudo ou email) → retourne user ou admin

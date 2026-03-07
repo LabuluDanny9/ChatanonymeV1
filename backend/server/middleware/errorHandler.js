@@ -34,9 +34,14 @@ function errorHandler(err, req, res, next) {
     status = 503;
   }
 
-  let message = config.env === 'production' && status === 500
-    ? 'Erreur serveur'
-    : (err.message || 'Erreur serveur');
+  let message = err.message || 'Erreur serveur';
+  // En production 500 : afficher le message si erreur config/DB (aide diagnostic)
+  if (config.env === 'production' && status === 500) {
+    const m = message.toLowerCase();
+    if (!m.includes('relation') && !m.includes('does not exist') && !m.includes('jwt') && !m.includes('secret') && !m.includes('database') && !m.includes('connection') && !m.includes('column')) {
+      message = 'Erreur serveur';
+    }
+  }
 
   if (status === 503) {
     if (isDbSchemaError(err)) {
