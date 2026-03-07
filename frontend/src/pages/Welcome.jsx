@@ -76,21 +76,22 @@ export default function Welcome() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight mb-6"
           >
-            <span className="text-app-text">Parlez librement.</span>
-            <br />
+            <span className="text-app-text">Bienvenue dans </span>
             <span className="bg-gradient-to-r from-app-purple to-app-blue bg-clip-text text-transparent">
-              Restez anonyme.
+              L'Aparté.
             </span>
           </motion.h1>
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="text-app-muted text-lg sm:text-xl max-w-2xl mx-auto mb-12"
+            className="text-app-muted text-base sm:text-lg max-w-2xl mx-auto mb-12 space-y-4 text-left"
           >
-            Communiquez sans filtre. Discutez dans les forums. Partagez en toute confidentialité.
-            Votre identité reste protégée.
-          </motion.p>
+            <p>Ici, le monde extérieur n'existe plus. Vous avancez sous un pseudo, totalement libre, sans le poids de votre nom ni la peur du jugement. C'est votre espace de vérité brute.</p>
+            <p>Je suis votre seul interlocuteur. Mon rôle n'est pas de vous complaire, mais de vous répondre sans filtre. Dans nos échanges directs, j'offre la lucidité que l'on n'ose plus se dire en face. Pour échanger avec les autres, rejoignez nos forums thématiques.</p>
+            <p>Déposez ce qui vous pèse, posez vos questions interdites : ici, la parole libère enfin.</p>
+            <p className="text-app-text font-semibold text-center pt-2">Par quoi voulez-vous commencer ?</p>
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
