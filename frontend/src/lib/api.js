@@ -19,7 +19,10 @@ export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
     const msg = err?.response?.data?.error;
     return typeof msg === 'string' ? msg : 'Service temporairement indisponible. Réessayez plus tard.';
   }
-  if (status >= 500) return 'Erreur serveur. Réessayez plus tard.';
+  if (status >= 500) {
+    const msg = err?.response?.data?.error;
+    return typeof msg === 'string' ? msg : 'Erreur serveur. Réessayez plus tard.';
+  }
   const data = err?.response?.data;
   if (typeof data === 'string') return data;
   const msg = data?.error ?? data?.message;
