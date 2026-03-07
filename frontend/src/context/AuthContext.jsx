@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 
 const STORAGE_USER = 'chatanonyme_user';
 const STORAGE_ADMIN = 'chatanonyme_admin';
-const SUPABASE_EMAIL_DOMAIN = '@chatanonyme.local';
+const SUPABASE_EMAIL_DOMAIN = '@users.laparte.app';
 
 const AuthContext = createContext(null);
 
