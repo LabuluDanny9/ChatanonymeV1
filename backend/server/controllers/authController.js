@@ -2,7 +2,7 @@
  * Contrôleur Auth - Inscription, login utilisateur, login admin
  */
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');

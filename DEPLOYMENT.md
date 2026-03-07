@@ -27,7 +27,7 @@ Dans **Vercel** → ton projet → **Settings** → **Environment Variables**, a
 | `JWT_SECRET` | Chaîne aléatoire sécurisée (ex. `openssl rand -hex 32`) | **Oui** |
 | `CORS_ORIGIN` | URL de ton frontend (ex. `https://ton-projet.vercel.app`) | Oui |
 
-**Obtenir DATABASE_URL :** Supabase → **Settings** → **Database** → **Connection string** → **URI**. Pour Vercel (serverless), utilise le **Connection pooler** (port **6543**) plutôt que 5432.
+**Obtenir DATABASE_URL :** Supabase → **Settings** → **Database** → **Connection string** → **Transaction pooler** (port **6543**). Le suffixe `?workaround=supabase-pooler.vercel` est ajouté automatiquement par l'app.
 
 ### 3. Redéployer
 

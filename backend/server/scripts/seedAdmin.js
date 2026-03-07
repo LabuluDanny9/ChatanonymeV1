@@ -3,7 +3,7 @@
  * À appeler au démarrage du serveur ou manuellement.
  */
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 const config = require('../config');
 

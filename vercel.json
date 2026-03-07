@@ -1,6 +1,12 @@
 {
   "version": 2,
   "buildCommand": "cd backend && npm ci && cd ../frontend && npm ci && npm run build",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 15,
+      "memory": 1024
+    }
+  },
   "outputDirectory": "frontend/build",
   "framework": null,
   "rewrites": [

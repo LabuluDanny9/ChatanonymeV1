@@ -386,12 +386,18 @@ if (isVercel && !dbUrl) {
   };
 } else {
   const { Pool } = require('pg');
+  // Sur Vercel : URL Supabase pooler + workaround recommandé, pool réduit pour serverless
+  let connStr = dbUrl;
+  if (isVercel && (dbUrl.includes('pooler.supabase.com') || dbUrl.includes('supabase.co')) && !dbUrl.includes('workaround=')) {
+    connStr = dbUrl.includes('?') ? `${dbUrl}&workaround=supabase-pooler.vercel` : `${dbUrl}?workaround=supabase-pooler.vercel`;
+  }
   const pgPool = new Pool({
-    connectionString: dbUrl,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    ssl: (dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com')) ? { rejectUnauthorized: false } : false,
+    connectionString: connStr,
+    max: isVercel ? 2 : 20,
+    idleTimeoutMillis: isVercel ? 5000 : 30000,
+    connectionTimeoutMillis: 8000,
+    allowExitOnIdle: isVercel,
+    ssl: (connStr.includes('supabase.co') || connStr.includes('pooler.supabase.com')) ? { rejectUnauthorized: false } : false,
   });
   pgPool.on('error', (err) => console.error('Erreur PostgreSQL:', err.message));
   db = pgPool;

@@ -8,7 +8,7 @@
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const dbUrl = process.env.DATABASE_URL || 'json:./data/silencehub.json';
 const useJson = !dbUrl || dbUrl.startsWith('json:');
