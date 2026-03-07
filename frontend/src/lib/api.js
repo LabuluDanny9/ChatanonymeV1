@@ -28,6 +28,7 @@ export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
   const msg = data?.error ?? data?.message;
   if (typeof msg === 'string') return msg;
   if (msg && typeof msg === 'object' && msg.message) return msg.message;
+  if (typeof err?.message === 'string') return err.message;
   return fallback;
 };
 

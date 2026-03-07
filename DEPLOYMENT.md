@@ -24,8 +24,11 @@ Dans **Vercel** → ton projet → **Settings** → **Environment Variables**, a
 | Variable | Valeur | Obligatoire |
 |----------|--------|-------------|
 | `DATABASE_URL` | URL PostgreSQL Supabase (voir ci-dessous) | **Oui** |
-| `JWT_SECRET` | Chaîne aléatoire sécurisée (ex. `openssl rand -hex 32`) | **Oui** |
-| `CORS_ORIGIN` | URL de ton frontend (ex. `https://ton-projet.vercel.app`) | Oui |
+| `JWT_SECRET` | Chaîne aléatoire sécurisée | **Oui** |
+| `CORS_ORIGIN` | URL de ton frontend | Oui |
+| `REACT_APP_SUPABASE_URL` | `https://xxx.supabase.co` (Supabase > Settings) | Pour inscription via anon |
+| `REACT_APP_SUPABASE_ANON_KEY` | Clé anon (Supabase > Settings > API) | Pour inscription via anon |
+| `SUPABASE_JWT_SECRET` | JWT Secret (Supabase > Settings > API) | Pour accepter tokens Supabase |
 
 **Obtenir DATABASE_URL :** Supabase → **Settings** → **Database** → **Connection string** → **Transaction pooler** (port **6543**). Le suffixe `?workaround=supabase-pooler.vercel` est ajouté automatiquement par l'app.
 
@@ -33,9 +36,22 @@ Dans **Vercel** → ton projet → **Settings** → **Environment Variables**, a
 
 Après avoir ajouté les variables, **Redeploy** le projet sur Vercel.
 
-### Erreur « Erreur serveur » à l'inscription ?
+### Inscription via Supabase Auth (recommandé — évite les 500)
 
-1. **DATABASE_URL manquant** → Vérifie qu'elle est définie sur Vercel (Production, Preview, Development)
+Pour contourner les erreurs 500 à l'inscription, utilise l'authentification Supabase (anon key) :
+
+1. **Supabase** → **Authentication** → **Providers** → **Email** → désactiver **Confirm email**
+2. **Supabase** → **SQL Editor** → exécuter `backend/server/scripts/migration-supabase-auth-trigger.sql`
+3. **Vercel** → ajouter les variables :
+   - `REACT_APP_SUPABASE_URL` = `https://xxx.supabase.co`
+   - `REACT_APP_SUPABASE_ANON_KEY` = clé anon (Settings > API)
+   - `SUPABASE_JWT_SECRET` = JWT Secret (Settings > API)
+
+L'inscription et la connexion passent alors directement par Supabase, sans appeler l'API.
+
+### Erreur « Erreur serveur » à l'inscription (sans Supabase Auth) ?
+
+1. **DATABASE_URL manquant** → Vérifie qu'elle est définie sur Vercel
 2. **Tables absentes** → Exécute `init-db-complet.sql` dans Supabase SQL Editor
 3. **Connexion refusée** → Utilise l'URL du **pooler** (port 6543) plutôt que 5432
 

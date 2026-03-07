@@ -1,16 +1,26 @@
 /**
  * Contexte d'authentification ChatAnonyme
  * Gère session utilisateur (pseudo) et session admin.
+ * Inscription/connexion user via Supabase Auth (anon key) si configuré, sinon API.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const STORAGE_USER = 'chatanonyme_user';
 const STORAGE_ADMIN = 'chatanonyme_admin';
+const SUPABASE_EMAIL_DOMAIN = '@chatanonyme.local';
 
 const AuthContext = createContext(null);
+
+function userFromSupabaseSession(session) {
+  if (!session?.user) return null;
+  const u = session.user;
+  const pseudo = u.user_metadata?.pseudo || u.email?.split('@')[0] || 'user';
+  return { id: u.id, pseudo, phone: null, email: u.email, photo: u.user_metadata?.photo || null };
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -20,6 +30,21 @@ export function AuthProvider({ children }) {
   const location = useLocation();
 
   const loginUser = useCallback(async (identifier, password) => {
+    if (supabase && !identifier.includes('@')) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${identifier}${SUPABASE_EMAIL_DOMAIN}`,
+        password,
+      });
+      if (error) throw error;
+      const token = data.session?.access_token;
+      const userData = userFromSupabaseSession(data.session);
+      userTokenRef.current = token;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
+      setUser(userData);
+      setAdmin(null);
+      return { type: 'user', user: userData };
+    }
     const { data } = await api.post('/api/auth/login', { identifier, password });
     if (data.type === 'admin') {
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
@@ -37,6 +62,25 @@ export function AuthProvider({ children }) {
   }, []);
 
   const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
+    if (supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email: `${pseudo.trim()}${SUPABASE_EMAIL_DOMAIN}`,
+        password,
+        options: { data: { pseudo: pseudo.trim(), photo: photo || null } },
+      });
+      if (error) throw error;
+      if (!data.session) {
+        throw new Error('Vérifiez votre email pour confirmer l\'inscription. Ou désactivez "Confirm email" dans Supabase Auth.');
+      }
+      const token = data.session.access_token;
+      const userData = userFromSupabaseSession(data.session);
+      userTokenRef.current = token;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
+      setUser(userData);
+      setAdmin(null);
+      return { token, user: userData };
+    }
     const { data } = await api.post('/api/auth/register', { pseudo, password, phone, email, photo });
     userTokenRef.current = data.token;
     api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
