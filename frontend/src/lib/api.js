@@ -3,6 +3,7 @@
  */
 
 import axios from 'axios';
+import { supabase } from './supabase';
 
 // En dev sans URL : proxy (package.json). Sinon REACT_APP_API_URL.
 const API_URL = process.env.REACT_APP_API_URL || '';
@@ -125,13 +126,40 @@ api.setAdminToken = (token) => {
   else delete api.defaults.headers.common['Authorization'];
 };
 
-// Intercepteur 401 : NE PAS rediriger automatiquement (évite déconnexion intempestive)
-// Les erreurs sont propagées aux composants qui affichent le message
-// L'utilisateur peut se déconnecter manuellement via le menu
+// Intercepteur 401 : tente de rafraîchir le token Supabase (user) avant de propager l'erreur
 api.resetAuthGracePeriod = () => {};
 api.interceptors.response.use(
   (res) => res,
-  (err) => Promise.reject(err)
+  async (err) => {
+    const status = err?.response?.status;
+    const config = err?.config;
+    const isRetry = config?.__retried401;
+    if (status !== 401 || isRetry || !config) return Promise.reject(err);
+
+    // Uniquement pour session user (Supabase) — admin utilise JWT API (7j)
+    const userStored = localStorage.getItem('chatanonyme_user');
+    if (!userStored || !supabase) return Promise.reject(err);
+
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data?.session?.access_token) return Promise.reject(err);
+      const token = data.session.access_token;
+      const parsed = JSON.parse(userStored);
+      const userData = parsed?.user || {
+        id: data.session.user?.id,
+        pseudo: data.session.user?.user_metadata?.pseudo || data.session.user?.email?.split('@')[0] || 'user',
+        photo: data.session.user?.user_metadata?.photo || null,
+      };
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem('chatanonyme_user', JSON.stringify({ token, user: userData }));
+      config.__retried401 = true;
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+      return api(config);
+    } catch {
+      return Promise.reject(err);
+    }
+  }
 );
 
 export default api;
