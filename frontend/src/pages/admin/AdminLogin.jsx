@@ -28,7 +28,7 @@ export default function AdminLogin() {
       .catch((err) => {
         // 503 = DB non configurée → afficher formulaire quand même (login/register)
         if (err?.response?.status !== 503) return;
-        setError(err?.response?.data?.error || 'Base de données indisponible. Vérifiez la configuration.');
+        setError(getErrorMessage(err, 'Base de données indisponible. Vérifiez la configuration.'));
       });
   }, []);
 

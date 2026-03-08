@@ -13,6 +13,13 @@ const STORAGE_USER = 'chatanonyme_user';
 const STORAGE_ADMIN = 'chatanonyme_admin';
 const SUPABASE_EMAIL_DOMAIN = '@users.laparte.app';
 
+/** Convertit une erreur en Error avec message string (évite React #31 - objets non rendables) */
+function toError(err, fallback = 'Une erreur est survenue') {
+  if (err instanceof Error) return err;
+  const msg = err?.message ?? err?.response?.data?.error;
+  return new Error(typeof msg === 'string' ? msg : fallback);
+}
+
 /** Convertit le pseudo en partie locale valide pour email (a-z, 0-9, ., _, -) */
 function toValidEmailLocalPart(pseudo) {
   const s = String(pseudo || '').trim();
@@ -66,7 +73,7 @@ export function AuthProvider({ children }) {
           email: `${toValidEmailLocalPart(identifier)}${SUPABASE_EMAIL_DOMAIN}`,
           password,
         });
-        if (error) throw error;
+        if (error) throw toError(error);
         const token = data.session?.access_token;
         const userData = userFromSupabaseSession(data.session);
         userTokenRef.current = token;
@@ -76,7 +83,7 @@ export function AuthProvider({ children }) {
         setAdmin(null);
         return { type: 'user', user: userData };
       }
-      throw apiErr;
+      throw toError(apiErr, 'Identifiants incorrects');
     }
   }, []);
 
@@ -92,7 +99,7 @@ export function AuthProvider({ children }) {
         password,
         options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
       });
-      if (error) throw error;
+      if (error) throw toError(error);
       if (data.session) {
         const token = data.session.access_token;
         const userData = userFromSupabaseSession(data.session);
@@ -153,11 +160,11 @@ export function AuthProvider({ children }) {
         if (msg.includes('Email signups are disabled') || msg.includes('signups are disabled')) {
           throw new Error('Inscription par email désactivée. Vérifiez la configuration Supabase (Authentication > Providers > Email > Enable Email Signup).');
         }
-        if (msg.includes('Compte créé')) throw supaErr;
+        if (msg.includes('Compte créé')) throw toError(supaErr, 'Compte créé. Connectez-vous avec votre pseudo et mot de passe.');
         throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Inscription impossible. Réessayez plus tard.');
       }
     }
-    throw lastErr;
+    throw toError(lastErr, 'Inscription impossible. Réessayez plus tard.');
   }, []);
 
   const loginAdmin = useCallback(async (email, password) => {
@@ -171,7 +178,7 @@ export function AuthProvider({ children }) {
     } catch (apiErr) {
       if (supabase && email?.includes('@')) {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
+        if (error) throw toError(error);
         const adminData = adminFromSupabaseSession(data.session);
         if (!adminData) throw new Error('Connexion impossible.');
         const token = data.session?.access_token;
@@ -181,7 +188,7 @@ export function AuthProvider({ children }) {
         setUser(null);
         return { token, admin: adminData };
       }
-      throw apiErr;
+      throw toError(apiErr, 'Identifiants incorrects');
     }
   }, []);
 
@@ -214,7 +221,7 @@ export function AuthProvider({ children }) {
           password,
           options: { data: { is_admin: 'true' } },
         });
-        if (error) throw error;
+        if (error) throw toError(error);
         let token = data.session?.access_token;
         let adminData = adminFromSupabaseSession(data.session);
         if (!adminData && data.user) {
@@ -232,7 +239,7 @@ export function AuthProvider({ children }) {
         return { token, admin: adminData };
       } catch (supaErr) {
         const msg = supaErr?.message || '';
-        if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('already exists')) {
+        if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('already exists') || msg.includes('déjà utilisé')) {
           throw new Error('Cet email est déjà utilisé.');
         }
         if (msg.includes('rate limit') || msg.includes('too many')) {
@@ -244,11 +251,11 @@ export function AuthProvider({ children }) {
         if (msg.includes('maximum') && msg.includes('administrateurs')) {
           throw new Error('Le nombre maximum d\'administrateurs (3) est atteint.');
         }
-        if (msg.includes('Compte créé')) throw supaErr;
+        if (msg.includes('Compte créé')) throw toError(supaErr, 'Compte créé. Connectez-vous avec votre email et mot de passe.');
         throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Création impossible. Réessayez plus tard.');
       }
     }
-    throw lastErr;
+    throw toError(lastErr, 'Création impossible. Réessayez plus tard.');
   }, []);
 
   const setAdminSession = useCallback((token, adminData) => {

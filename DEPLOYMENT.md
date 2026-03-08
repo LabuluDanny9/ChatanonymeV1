@@ -55,6 +55,16 @@ L'inscription et la connexion (utilisateurs et administrateurs) passent alors pa
 - **Solution 1** : Supabase → **Project Settings** → **Auth** → **SMTP** → configurer un SMTP personnalisé (Gmail, SendGrid, etc.)
 - **Solution 2** : L'app tente automatiquement l'API en secours si Supabase échoue
 
+### Erreur « Database error saving new user » (Supabase) ?
+
+Le trigger sur `auth.users` a échoué. Causes possibles :
+
+- **Inscription admin** : l'email existe déjà (ex. `admin@laparte.app` du seed) → utiliser un autre email ou se connecter avec les identifiants existants
+- **Colonnes manquantes** : le trigger fournit maintenant `created_at`, `updated_at` explicitement
+- **Logs** : Supabase → Logs → Postgres logs pour voir l'erreur exacte
+
+Réexécuter `migration-supabase-auth-trigger.sql` (version mise à jour) dans le SQL Editor.
+
 ### Erreur « Erreur serveur » à l'inscription (sans Supabase Auth) ?
 
 1. **DATABASE_URL manquant** → Vérifie qu'elle est définie sur Vercel

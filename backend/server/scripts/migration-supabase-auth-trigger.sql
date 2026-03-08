@@ -20,6 +20,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER AS $$
 DECLARE
   v_pseudo TEXT;
+  v_pseudo_base TEXT;
   v_email TEXT;
   v_is_admin BOOLEAN;
   v_admin_count INT;
@@ -27,23 +28,36 @@ BEGIN
   v_is_admin := (NEW.raw_user_meta_data->>'is_admin')::text = 'true';
 
   IF v_is_admin THEN
+    -- Vérifier si l'email existe déjà (seed ou API)
+    IF EXISTS (SELECT 1 FROM public.admins WHERE LOWER(email) = LOWER(NEW.email)) THEN
+      RAISE EXCEPTION 'Cet email est déjà utilisé par un administrateur.';
+    END IF;
     -- Vérifier la limite de 3 admins
     SELECT COUNT(*)::int INTO v_admin_count FROM public.admins;
     IF v_admin_count >= 3 THEN
       RAISE EXCEPTION 'Nombre maximum d''administrateurs (3) atteint.';
     END IF;
-    -- Insérer dans admins (email réel depuis auth.users)
-    INSERT INTO public.admins (id, email, password_hash, photo)
+    -- Insérer dans admins (toutes les colonnes explicites pour éviter erreurs)
+    INSERT INTO public.admins (id, email, password_hash, photo, created_at, updated_at)
     VALUES (
       NEW.id,
       LOWER(NEW.email),
       'supabase_auth',
-      COALESCE(NEW.raw_user_meta_data->>'photo', '')
-    )
-    ON CONFLICT (id) DO NOTHING;
+      COALESCE(NULLIF(trim(NEW.raw_user_meta_data->>'photo'), ''), ''),
+      NOW(),
+      NOW()
+    );
   ELSE
-    -- Insérer dans users (pseudo dans metadata)
-    v_pseudo := COALESCE(NEW.raw_user_meta_data->>'pseudo', split_part(NEW.email, '@', 1), 'user_' || substr(NEW.id::text, 1, 8));
+    -- Insérer dans users (pseudo dans metadata, unique)
+    v_pseudo_base := COALESCE(NEW.raw_user_meta_data->>'pseudo', split_part(NEW.email, '@', 1), 'user');
+    v_pseudo_base := regexp_replace(trim(v_pseudo_base), '[^a-zA-Z0-9_-]', '_', 'g');
+    v_pseudo_base := NULLIF(regexp_replace(v_pseudo_base, '_+', '_', 'g'), '');
+    v_pseudo_base := COALESCE(v_pseudo_base, 'user');
+    -- Garantir unicité du pseudo (éviter conflit avec users créés via API)
+    v_pseudo := v_pseudo_base;
+    IF EXISTS (SELECT 1 FROM public.users WHERE LOWER(pseudo) = LOWER(v_pseudo_base)) THEN
+      v_pseudo := v_pseudo_base || '_' || substr(replace(NEW.id::text, '-', ''), 1, 8);
+    END IF;
     v_email := NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'email', '')), '');
     INSERT INTO public.users (id, pseudo, password_hash, phone, email, photo, status)
     VALUES (

@@ -9,19 +9,24 @@ const API_URL = process.env.REACT_APP_API_URL || '';
 
 export const getApiBaseUrl = () => api.defaults.baseURL || API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
-/** Extrait un message d'erreur lisible (évite d'afficher un objet) */
+/** Extrait un message d'erreur lisible (évite d'afficher un objet - React error #31) */
+function toErrorString(val, fallback) {
+  if (val == null) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && typeof val.message === 'string') return val.message;
+  return fallback;
+}
+
 export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
   const status = err?.response?.status;
   if (status === 404) {
     return 'Service indisponible. Réessayez plus tard ou contactez l\'administrateur.';
   }
   if (status === 503) {
-    const msg = err?.response?.data?.error;
-    return typeof msg === 'string' ? msg : 'Service temporairement indisponible. Réessayez plus tard.';
+    return toErrorString(err?.response?.data?.error, 'Service temporairement indisponible. Réessayez plus tard.');
   }
   if (status >= 500) {
-    const msg = err?.response?.data?.error;
-    return typeof msg === 'string' ? msg : 'Erreur serveur. Réessayez plus tard.';
+    return toErrorString(err?.response?.data?.error, 'Erreur serveur. Réessayez plus tard.');
   }
   const data = err?.response?.data;
   if (typeof data === 'string') return data;
