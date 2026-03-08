@@ -54,6 +54,7 @@ export function AuthProvider({ children }) {
   const loginUser = useCallback(async (identifier, password) => {
     try {
       const { data } = await api.post('/api/auth/login', { identifier, password });
+      if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
       if (data.type === 'admin') {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
         localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
@@ -74,6 +75,7 @@ export function AuthProvider({ children }) {
           password,
         });
         if (error) throw toError(error);
+        if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
         const token = data.session?.access_token;
         const userData = userFromSupabaseSession(data.session);
         userTokenRef.current = token;
@@ -121,6 +123,7 @@ export function AuthProvider({ children }) {
     };
 
     const applySuccess = (token, userData) => {
+      if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
       userTokenRef.current = token;
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
@@ -170,6 +173,7 @@ export function AuthProvider({ children }) {
   const loginAdmin = useCallback(async (email, password) => {
     try {
       const { data } = await api.post('/api/auth/admin/login', { email, password });
+      if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
       api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
       localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
       setAdmin(data.admin);
@@ -179,6 +183,7 @@ export function AuthProvider({ children }) {
       if (supabase && email?.includes('@')) {
         const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw toError(error);
+        if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
         const adminData = adminFromSupabaseSession(data.session);
         if (!adminData) throw new Error('Connexion impossible.');
         const token = data.session?.access_token;
@@ -199,6 +204,7 @@ export function AuthProvider({ children }) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const { data } = await api.post('/api/auth/admin/register', payload);
+        if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
         api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
         localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
         setAdmin(data.admin);
@@ -232,6 +238,7 @@ export function AuthProvider({ children }) {
           }
         }
         if (!token || !adminData) throw new Error('Compte créé. Connectez-vous avec votre email et mot de passe.');
+        if (api.resetAuthGracePeriod) api.resetAuthGracePeriod();
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token, admin: adminData }));
         setAdmin(adminData);

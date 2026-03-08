@@ -65,6 +65,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
       await (isAdmin
         ? loginAdmin(form.email.trim(), form.password)
         : loginUser(identifier.trim(), form.password));
+      setLoading(false);
       setSuccess(true);
     } catch (err) {
       setError(getErrorMessage(err, 'Identifiants incorrects'));
@@ -94,6 +95,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
     setLoading(true);
     try {
       await registerUser(form.pseudo.trim(), form.password, null, form.signupEmail?.trim() || null, form.avatar || null);
+      setLoading(false);
       setSuccess(true);
     } catch (err) {
       setError(getErrorMessage(err, "Erreur lors de l'inscription"));

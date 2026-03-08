@@ -37,7 +37,7 @@ async function authAdmin(req, res, next) {
     if (!admin) {
       return res.status(401).json({ error: 'Administrateur introuvable' });
     }
-    req.admin = { id: admin.id, email: admin.email };
+    req.admin = { id: admin.id, email: admin.email, photo: admin.photo || '' };
     next();
   } catch (err) {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {

@@ -95,18 +95,33 @@ api.setAdminToken = (token) => {
 };
 
 // Intercepteur : token expiré ou invalide → déconnexion et redirection
+// Période de grâce pour éviter redirection immédiate après login
+let lastAuthTime = typeof window !== 'undefined' ? Date.now() : 0;
+api.resetAuthGracePeriod = () => { lastAuthTime = Date.now(); };
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err.response?.status;
+    const url = (err.config?.baseURL || '') + (err.config?.url || '');
+    const isAuthRoute = url.includes('/api/auth/');
+    if (status !== 401 || isAuthRoute) return Promise.reject(err);
+
     const msg = typeof err.response?.data?.error === 'string' ? err.response.data.error : '';
-    const isSessionError = msg === 'Token invalide ou expiré' || msg === 'Session expirée' || msg === 'Token manquant' || msg === 'Token requis' || msg === 'Token admin manquant';
-    const hadAuth = err.config?.headers?.Authorization;
-    if (status === 401 && (isSessionError || hadAuth) && !err.config?.url?.includes('/api/auth/')) {
+    const isSessionError = [
+      'Token invalide ou expiré', 'Session expirée', 'Token manquant', 'Token requis',
+      'Token admin manquant', 'Utilisateur introuvable', 'Administrateur introuvable',
+    ].includes(msg);
+    const hadAuth = !!err.config?.headers?.Authorization;
+
+    // Ne pas rediriger pendant 3s après dernier login (évite race)
+    const graceMs = 3000;
+    if (Date.now() - lastAuthTime < graceMs) return Promise.reject(err);
+
+    if (isSessionError || hadAuth) {
       localStorage.removeItem('chatanonyme_user');
       localStorage.removeItem('chatanonyme_admin');
       delete api.defaults.headers.common['Authorization'];
-      const isAdmin = err.config?.url?.includes('/api/admin');
+      const isAdmin = url.includes('/api/admin');
       window.location.href = isAdmin ? '/admin' : '/connexion';
     }
     return Promise.reject(err);

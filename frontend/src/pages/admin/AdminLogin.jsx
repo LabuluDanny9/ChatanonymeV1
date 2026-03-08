@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import AuthInput from '../../components/auth/AuthInput';
@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import api, { getErrorMessage, toErrorDisplay } from '../../lib/api';
 
 export default function AdminLogin() {
+  const navigate = useNavigate();
   const { loginAdmin, registerAdmin, isAdmin } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
@@ -44,6 +45,8 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       await loginAdmin(form.email.trim(), form.password);
+      setLoading(false);
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, 'Identifiants incorrects'));
       setLoading(false);
@@ -68,6 +71,8 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       await registerAdmin(form.email.trim(), form.password);
+      setLoading(false);
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       setError(getErrorMessage(err, 'Erreur lors de la création'));
     } finally {
