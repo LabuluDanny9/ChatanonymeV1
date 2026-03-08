@@ -34,6 +34,25 @@ async function authUser(req, res, next) {
     }
     const userId = decoded.userId || decoded.sub;
     let user = await User.findById(userId);
+    // Sync Supabase: si JWT valide mais user absent (trigger pas exécuté), créer l'utilisateur
+    if (!user && decoded.sub && config.jwt.supabaseSecret) {
+      try {
+        const meta = decoded.user_metadata || decoded;
+        const pseudo = String(meta.pseudo || meta.email?.split('@')[0] || 'user').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 50) || 'user';
+        const bcrypt = require('bcryptjs');
+        const hash = await bcrypt.hash('supabase_sync_' + Date.now(), 10);
+        user = await User.create({
+          id: userId,
+          pseudo,
+          passwordHash: hash,
+          phone: null,
+          email: meta.email || null,
+          photo: meta.photo || null,
+        });
+      } catch (e) {
+        console.warn('[authUser] sync user:', e?.message);
+      }
+    }
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur introuvable' });
     }

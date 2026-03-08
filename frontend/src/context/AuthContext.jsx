@@ -285,24 +285,26 @@ export function AuthProvider({ children }) {
     userTokenRef.current = null;
   }, []);
 
+  // Sync token depuis localStorage à chaque navigation + restauration state si perdu
   useEffect(() => {
-    const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin';
     const adminStored = localStorage.getItem(STORAGE_ADMIN);
     const userStored = localStorage.getItem(STORAGE_USER);
-    if (isAdminRoute && adminStored) {
-      try {
-        const { token } = JSON.parse(adminStored);
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      } catch {
-        api.defaults.headers.common['Authorization'] = userTokenRef.current ? `Bearer ${userTokenRef.current}` : '';
+    const isAdminRoute = location.pathname.startsWith('/admin') && location.pathname !== '/admin';
+
+    try {
+      if (adminStored) {
+        const { token, admin: a } = JSON.parse(adminStored);
+        if (token) api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        if (!admin && a) setAdmin(a);
+      } else if (userStored) {
+        const { token, user: u } = JSON.parse(userStored);
+        if (token) {
+          userTokenRef.current = token;
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        if (!user && u) setUser(u);
       }
-    } else if (userStored) {
-      try {
-        const { token } = JSON.parse(userStored);
-        userTokenRef.current = token;
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      } catch {}
-    }
+    } catch {}
   }, [location.pathname, user, admin]);
 
   useEffect(() => {

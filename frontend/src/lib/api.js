@@ -19,18 +19,28 @@ function toErrorString(val, fallback) {
 
 export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
   const status = err?.response?.status;
+  const data = err?.response?.data;
+  const msg = typeof data?.error === 'string' ? data.error : data?.message;
+
+  if (status === 401) {
+    if (msg === 'Utilisateur introuvable' || msg === 'Administrateur introuvable') {
+      return 'Compte non synchronisé. Déconnectez-vous et reconnectez-vous. Si le problème persiste, exécutez migration-supabase-auth-trigger.sql dans Supabase.';
+    }
+    if (msg === 'Token manquant' || msg === 'Token invalide ou expiré' || msg === 'Session expirée') {
+      return 'Session expirée. Veuillez vous reconnecter.';
+    }
+    return msg || 'Session expirée. Veuillez vous reconnecter.';
+  }
   if (status === 404) {
     return 'Service indisponible. Réessayez plus tard ou contactez l\'administrateur.';
   }
   if (status === 503) {
-    return toErrorString(err?.response?.data?.error, 'Service temporairement indisponible. Réessayez plus tard.');
+    return toErrorString(msg, 'Service temporairement indisponible. Réessayez plus tard.');
   }
   if (status >= 500) {
-    return toErrorString(err?.response?.data?.error, 'Erreur serveur. Réessayez plus tard.');
+    return toErrorString(msg, 'Erreur serveur. Réessayez plus tard.');
   }
-  const data = err?.response?.data;
   if (typeof data === 'string') return data;
-  const msg = data?.error ?? data?.message;
   if (typeof msg === 'string') return msg;
   if (msg && typeof msg === 'object' && msg.message) return msg.message;
   if (typeof err?.message === 'string') return err.message;

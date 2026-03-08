@@ -33,7 +33,20 @@ async function authAdmin(req, res, next) {
       return res.status(403).json({ error: 'Accès réservé à l\'administrateur' });
     }
     const adminId = decoded.adminId || decoded.sub;
-    const admin = await Admin.findById(adminId);
+    let admin = await Admin.findById(adminId);
+    // Sync Supabase: si JWT valide mais admin absent (trigger pas exécuté), créer l'admin
+    if (!admin && decoded.sub && config.jwt.supabaseSecret) {
+      try {
+        const email = decoded.email || decoded.user_metadata?.email || '';
+        if (email) {
+          const bcrypt = require('bcryptjs');
+          const hash = await bcrypt.hash('supabase_sync_' + Date.now(), 10);
+          admin = await Admin.create(email, hash, decoded.user_metadata?.photo || '', adminId);
+        }
+      } catch (e) {
+        console.warn('[authAdmin] sync admin:', e?.message);
+      }
+    }
     if (!admin) {
       return res.status(401).json({ error: 'Administrateur introuvable' });
     }

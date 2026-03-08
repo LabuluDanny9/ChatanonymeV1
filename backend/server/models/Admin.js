@@ -21,7 +21,15 @@ const Admin = {
     return rows[0];
   },
 
-  async create(email, passwordHash, photo = null) {
+  async create(email, passwordHash, photo = null, customId = null) {
+    if (customId) {
+      const { rows } = await pool.query(
+        `INSERT INTO admins (id, email, password_hash, photo) VALUES ($1, LOWER($2), $3, $4) 
+         ON CONFLICT (id) DO NOTHING RETURNING id, email, photo, created_at`,
+        [customId, email, passwordHash, photo || '']
+      );
+      return rows[0] || (await this.findById(customId));
+    }
     const { rows } = await pool.query(
       `INSERT INTO admins (email, password_hash, photo) VALUES (LOWER($1), $2, $3) 
        RETURNING id, email, photo, created_at`,

@@ -5,7 +5,16 @@
 const { pool } = require('../config/database');
 
 const User = {
-  async create({ pseudo, passwordHash, phone = null, email = null, photo = null }) {
+  async create({ pseudo, passwordHash, phone = null, email = null, photo = null, id: customId = null }) {
+    if (customId) {
+      const { rows } = await pool.query(
+        `INSERT INTO users (id, pseudo, password_hash, phone, email, photo, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, 'active') 
+         ON CONFLICT (id) DO NOTHING RETURNING *`,
+        [customId, pseudo, passwordHash, phone, email, photo]
+      );
+      return rows[0] || (await this.findById(customId));
+    }
     const { rows } = await pool.query(
       `INSERT INTO users (pseudo, password_hash, phone, email, photo, status) 
        VALUES ($1, $2, $3, $4, $5, 'active') RETURNING *`,
