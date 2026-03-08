@@ -144,6 +144,9 @@ export function AuthProvider({ children }) {
         if (msg.includes('rate limit') || msg.includes('too many')) {
           throw new Error('Trop de tentatives. Réessayez dans quelques minutes.');
         }
+        if (msg.includes('Email signups are disabled') || msg.includes('signups are disabled')) {
+          throw new Error('Inscription par email désactivée. Vérifiez la configuration Supabase (Authentication > Providers > Email > Enable Email Signup).');
+        }
         if (msg.includes('Compte créé')) throw supaErr;
         throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Inscription impossible. Réessayez plus tard.');
       }

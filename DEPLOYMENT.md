@@ -41,9 +41,10 @@ Après avoir ajouté les variables, **Redeploy** le projet sur Vercel.
 
 Pour contourner les erreurs 500 à l'inscription, utilise l'authentification Supabase (anon key) :
 
-1. **Supabase** → **Authentication** → **Providers** → **Email** → désactiver **Confirm email**
-2. **Supabase** → **SQL Editor** → exécuter `backend/server/scripts/migration-supabase-auth-trigger.sql`
-3. **Vercel** → ajouter les variables :
+1. **Supabase** → **Authentication** → **Providers** → **Email** → activer **Enable Email Signup** (OBLIGATOIRE)
+2. **Supabase** → **Authentication** → **Providers** → **Email** → désactiver **Confirm email**
+3. **Supabase** → **SQL Editor** → exécuter `backend/server/scripts/migration-supabase-auth-trigger.sql`
+4. **Vercel** → ajouter les variables :
    - `REACT_APP_SUPABASE_URL` = `https://xxx.supabase.co`
    - `REACT_APP_SUPABASE_ANON_KEY` = clé anon (Settings > API)
    - `SUPABASE_JWT_SECRET` = JWT Secret (Settings > API)
