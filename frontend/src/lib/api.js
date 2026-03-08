@@ -51,18 +51,13 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Intercepteur : s'assurer que le token est toujours envoyé pour les routes protégées
+// Intercepteur : ajouter le token pour toutes les routes API sauf auth/config
 api.interceptors.request.use((config) => {
   const url = (config.baseURL || '') + (config.url || '');
   const isApiCall = url.includes('/api/');
-  const needsAuth = isApiCall && (
-    url.includes('/api/admin') ||
-    url.includes('/reply-private') ||
-    url.includes('/api/messages') ||
-    url.includes('/api/users') ||
-    url.includes('/comments') // delete, like, create comment
-  );
-  if (needsAuth && !config.headers.Authorization) {
+  const isPublic = url.includes('/api/auth/') || url.includes('/api/config') || url.includes('/api/debug-setup') || url.includes('/api/health-db');
+  const needsAuth = isApiCall && !isPublic && !config.headers.Authorization;
+  if (needsAuth) {
     try {
       const adminStored = localStorage.getItem('chatanonyme_admin');
       const userStored = localStorage.getItem('chatanonyme_user');
@@ -105,13 +100,14 @@ api.interceptors.response.use(
   (err) => {
     const status = err.response?.status;
     const msg = typeof err.response?.data?.error === 'string' ? err.response.data.error : '';
-    const isSessionError = msg === 'Token invalide ou expiré' || msg === 'Session expirée';
+    const isSessionError = msg === 'Token invalide ou expiré' || msg === 'Session expirée' || msg === 'Token manquant' || msg === 'Token requis' || msg === 'Token admin manquant';
     const hadAuth = err.config?.headers?.Authorization;
-    if (status === 401 && isSessionError && hadAuth) {
+    if (status === 401 && (isSessionError || hadAuth) && !err.config?.url?.includes('/api/auth/')) {
       localStorage.removeItem('chatanonyme_user');
       localStorage.removeItem('chatanonyme_admin');
       delete api.defaults.headers.common['Authorization'];
-      window.location.href = '/connexion';
+      const isAdmin = err.config?.url?.includes('/api/admin');
+      window.location.href = isAdmin ? '/admin' : '/connexion';
     }
     return Promise.reject(err);
   }

@@ -87,7 +87,8 @@ export default function AdminConversations() {
     ta.style.height = '44px';
     ta.style.height = `${Math.min(ta.scrollHeight, 128)}px`;
   }, [reply]);
-  const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
+  const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '') ||
+    (() => { try { return JSON.parse(localStorage.getItem('chatanonyme_admin') || '{}')?.token; } catch { return null; } })();
 
   const fetchConversations = useCallback(() => {
     api.get('/api/admin/conversations').then(({ data }) => {
