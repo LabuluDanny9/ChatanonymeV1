@@ -5,6 +5,7 @@
 import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
+import { toErrorDisplay } from '../../lib/api';
 
 export default function AuthInput({
   type = 'text',
@@ -93,7 +94,7 @@ export default function AuthInput({
           animate={{ opacity: 1, x: 0 }}
           className="mt-1.5 text-sm text-corum-red"
         >
-          {error}
+          {toErrorDisplay(error)}
         </motion.p>
       )}
       {helper && !error && (

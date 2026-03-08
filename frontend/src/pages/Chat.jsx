@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../lib/api';
+import api, { getErrorMessage, toErrorDisplay } from '../lib/api';
 import { io } from 'socket.io-client';
 import ChatBubble from '../components/ChatBubble';
 import { useToast } from '../context/ToastContext';
@@ -87,8 +87,9 @@ export default function Chat() {
       setContent('');
       setTimeout(scrollToBottom, 100);
     } catch (err) {
-      setError(err.response?.data?.error || 'Envoi impossible');
-      toast.error(err.response?.data?.error || 'Envoi impossible');
+      const msg = getErrorMessage(err, 'Envoi impossible');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }
@@ -134,7 +135,7 @@ export default function Chat() {
             animate={{ opacity: 1, y: 0 }}
             className="p-3 rounded-xl bg-corum-red/10 text-corum-red text-sm mb-4 flex items-center gap-2"
           >
-            {error}
+            {toErrorDisplay(error)}
           </motion.div>
         )}
         {messages.length === 0 && !error && (

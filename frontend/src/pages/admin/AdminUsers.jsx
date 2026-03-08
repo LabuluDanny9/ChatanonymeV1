@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Ban, Trash2, Search, MessageCircle, User } from 'lucide-react';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const statusConfig = {
@@ -55,7 +55,7 @@ export default function AdminUsers() {
       fetchUsers();
       toast.success('Utilisateur banni');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     }
   };
 
@@ -66,7 +66,7 @@ export default function AdminUsers() {
       fetchUsers();
       toast.success('Utilisateur supprimé');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     }
   };
 

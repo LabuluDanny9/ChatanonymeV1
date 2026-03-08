@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Eye, MessageCircle } from 'lucide-react';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 import { decodeHtmlEntities } from '../../lib/textUtils';
 import { useToast } from '../../context/ToastContext';
 
@@ -53,7 +53,7 @@ export default function AdminTopics() {
       setModal(null);
       fetchTopics();
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     }
   };
 
@@ -64,7 +64,7 @@ export default function AdminTopics() {
       fetchTopics();
       toast.success('Sujet supprimé');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     }
   };
 

@@ -10,7 +10,7 @@ import { Mail, Lock, Shield, ArrowRight, Shuffle } from 'lucide-react';
 import AuthInput from '../components/auth/AuthInput';
 import PasswordStrength from '../components/auth/PasswordStrength';
 import { useAuth } from '../context/AuthContext';
-import { getErrorMessage } from '../lib/api';
+import { getErrorMessage, toErrorDisplay } from '../lib/api';
 
 const TABS = { login: 0, signup: 1, anonymous: 2 };
 
@@ -218,7 +218,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                     animate={{ opacity: 1, x: 0 }}
                     className="text-sm text-corum-red bg-corum-red/10 rounded-xl p-3"
                   >
-                    {error}
+                    {toErrorDisplay(error)}
                   </motion.p>
                 )}
                 <AuthInput
@@ -276,7 +276,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                         animate={{ opacity: 1 }}
                         className="text-sm text-corum-red bg-corum-red/10 rounded-xl p-3"
                       >
-                        {error}
+                        {toErrorDisplay(error)}
                       </motion.p>
                     )}
                     <AuthInput
@@ -324,7 +324,7 @@ export default function AuthPage({ mode = 'user', defaultTab = 'login' }) {
                         animate={{ opacity: 1 }}
                         className="text-sm text-corum-red bg-corum-red/10 rounded-xl p-3"
                       >
-                        {error}
+                        {toErrorDisplay(error)}
                       </motion.p>
                     )}
                     <div>

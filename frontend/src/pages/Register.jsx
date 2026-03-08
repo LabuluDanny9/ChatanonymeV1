@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getErrorMessage } from '../lib/api';
 
 export default function Register() {
   const { registerUser } = useAuth();
@@ -40,8 +41,7 @@ export default function Register() {
       await registerUser(pseudo.trim(), password, null, null, null);
       navigate('/dashboard');
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || "Erreur lors de l'inscription";
-      setError(msg);
+      setError(getErrorMessage(err, "Erreur lors de l'inscription"));
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function Register() {
         onSubmit={handleSubmit}
         className="glass-card p-6 space-y-4"
       >
-        {error && <p className="text-sm text-danger bg-danger/10 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-danger bg-danger/10 rounded-xl p-3">{typeof error === 'string' ? error : (error?.message || 'Erreur')}</p>}
         <div>
           <label className="block text-sm text-muted mb-2">Choisir un pseudo *</label>
           <input

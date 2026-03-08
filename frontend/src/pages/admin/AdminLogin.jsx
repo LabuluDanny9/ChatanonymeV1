@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import AuthInput from '../../components/auth/AuthInput';
 import { useAuth } from '../../context/AuthContext';
-import api, { getErrorMessage } from '../../lib/api';
+import api, { getErrorMessage, toErrorDisplay } from '../../lib/api';
 
 export default function AdminLogin() {
   const { loginAdmin, registerAdmin, isAdmin } = useAuth();
@@ -165,7 +165,7 @@ export default function AdminLogin() {
                         animate={{ opacity: 1, x: 0 }}
                         className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm"
                       >
-                        {error}
+                        {toErrorDisplay(error)}
                       </motion.div>
                     )}
                     <AuthInput
@@ -216,7 +216,7 @@ export default function AdminLogin() {
                         animate={{ opacity: 1, x: 0 }}
                         className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm"
                       >
-                        {error}
+                        {toErrorDisplay(error)}
                       </motion.div>
                     )}
                     <AuthInput

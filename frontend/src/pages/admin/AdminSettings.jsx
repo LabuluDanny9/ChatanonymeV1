@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Lock, Bell, Moon, Key } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const AVATAR_OPTIONS = ['😊', '🎭', '🌟', '🔒', '🦋', '🌙', '🌸', '🦊', '🌈', '🦉', '🌻', '🐱'];
@@ -30,7 +30,7 @@ export default function AdminSettings() {
       updateAdminPhoto(data.photo);
       toast.success('Avatar mis à jour');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     } finally {
       setSending(false);
     }

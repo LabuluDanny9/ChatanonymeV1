@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getErrorMessage } from '../lib/api';
 
 export default function Login({ redirectTo = null }) {
   const { loginUser } = useAuth();
@@ -33,7 +34,7 @@ export default function Login({ redirectTo = null }) {
         navigate(redirectTo || '/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Identifiants incorrects');
+      setError(getErrorMessage(err, 'Identifiants incorrects'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export default function Login({ redirectTo = null }) {
         {redirectTo ? "Utilisez votre email d'administrateur." : 'Pseudo (utilisateur) ou email (admin).'}
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <p className="text-sm text-danger bg-danger/10 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-sm text-danger bg-danger/10 rounded-xl p-3">{typeof error === 'string' ? error : (error?.message || 'Erreur')}</p>}
         <div>
           <label className="block text-sm text-muted mb-2">Pseudo ou email</label>
           <input

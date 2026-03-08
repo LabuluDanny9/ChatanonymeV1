@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { Send, Lock, X, User, Ban, Search, Trash2, Menu, ChevronRight, MessageCircle, Mic, Paperclip, Smile } from 'lucide-react';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import ChatBubble from '../../components/ChatBubble';
@@ -196,8 +196,7 @@ export default function AdminConversations() {
       setMessages((prev) => [...prev, data]);
       setReply('');
     } catch (err) {
-      const msg = err.response?.data?.error || 'Erreur';
-      toast.error(msg);
+      toast.error(getErrorMessage(err, 'Erreur'));
     } finally {
       setSending(false);
     }
@@ -225,7 +224,7 @@ export default function AdminConversations() {
         fetchConversations();
         setModal(null);
       } catch (e) {
-        alert(e.response?.data?.error || 'Erreur');
+        alert(getErrorMessage(e, 'Erreur'));
       }
     }});
   };
@@ -239,7 +238,7 @@ export default function AdminConversations() {
         fetchConversations();
         setModal(null);
       } catch (e) {
-        alert(e.response?.data?.error || 'Erreur');
+        alert(getErrorMessage(e, 'Erreur'));
       }
     }});
   };
@@ -252,7 +251,7 @@ export default function AdminConversations() {
         setModal(null);
         toast.success('Message supprimé');
       } catch (e) {
-        toast.error(e.response?.data?.error || 'Erreur');
+        toast.error(getErrorMessage(e, 'Erreur'));
       }
     }});
   };
@@ -271,7 +270,7 @@ export default function AdminConversations() {
       setModal(null);
       toast.success('Message modifié');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     }
   };
 

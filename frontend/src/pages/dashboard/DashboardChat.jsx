@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Send, Mic, Paperclip, Smile, Shield, Image } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../lib/api';
+import api, { getErrorMessage, toErrorDisplay } from '../../lib/api';
 import { io } from 'socket.io-client';
 import ChatBubble from '../../components/ChatBubble';
 import VoiceRecorder from '../../components/chat/VoiceRecorder';
@@ -126,7 +126,7 @@ export default function DashboardChat() {
         api.post('/api/messages/mark-read').catch(() => {});
       })
       .catch((err) => {
-        setError(err.response?.data?.error || 'Erreur chargement');
+        setError(getErrorMessage(err, 'Erreur chargement'));
         toast.error('Impossible de charger les messages');
       });
   }, [user]);
@@ -161,8 +161,9 @@ export default function DashboardChat() {
         toast.success('Message envoyé');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Envoi impossible');
-      toast.error(err.response?.data?.error || 'Envoi impossible');
+      const msg = getErrorMessage(err, 'Envoi impossible');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }
@@ -211,7 +212,7 @@ export default function DashboardChat() {
       setDeleteModal(null);
       toast.success('Message supprimé');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(err, 'Erreur'));
     }
   };
 
@@ -228,7 +229,7 @@ export default function DashboardChat() {
       setEditModal(null);
       toast.success('Message modifié');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(err, 'Erreur'));
     }
   };
 
@@ -290,7 +291,7 @@ export default function DashboardChat() {
             animate={{ opacity: 1, y: 0 }}
             className="p-4 rounded-xl bg-app-danger/15 border border-app-danger/30 text-app-danger text-sm flex items-center gap-2"
           >
-            {error}
+            {toErrorDisplay(error)}
           </motion.div>
         )}
         {messages.length === 0 && !error && (

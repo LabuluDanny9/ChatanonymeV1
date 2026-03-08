@@ -85,7 +85,7 @@ export default function DashboardTopics() {
           animate={{ opacity: 1 }}
           className="p-4 rounded-xl bg-app-danger/20 text-app-danger border border-app-danger/30"
         >
-          {error}
+          {typeof error === 'string' ? error : (error?.message || 'Erreur')}
         </motion.div>
       )}
 

@@ -19,7 +19,7 @@ import {
   Trash2,
   Bell,
 } from 'lucide-react';
-import api from '../../lib/api';
+import api, { getErrorMessage } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
       setBroadcastContent('');
       toast.success('Message envoyé à tous les utilisateurs');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     } finally {
       setBroadcastSending(false);
     }
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
       updateAdminPhoto(data.photo);
       toast.success('Avatar mis à jour');
     } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
+      toast.error(getErrorMessage(e, 'Erreur'));
     } finally {
       setPhotoSending(false);
     }

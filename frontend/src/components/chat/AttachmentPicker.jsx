@@ -6,7 +6,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Image, FileText, File, Music, Video, X } from 'lucide-react';
-import api, { getApiBaseUrl } from '../../lib/api';
+import api, { getApiBaseUrl, getErrorMessage } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const ACCEPT = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,audio/*';
@@ -74,8 +74,9 @@ export default function AttachmentPicker({ onSelect, onClose }) {
       setProgress(0);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de l\'upload');
-      toast.error(err.response?.data?.error || 'Erreur lors de l\'upload');
+      const msg = getErrorMessage(err, 'Erreur lors de l\'upload');
+      setError(msg);
+      toast.error(msg);
     } finally {
       setUploading(false);
     }
@@ -149,7 +150,7 @@ export default function AttachmentPicker({ onSelect, onClose }) {
               />
             </div>
           )}
-          {error && <p className="text-sm text-chat-danger">{error}</p>}
+          {error && <p className="text-sm text-chat-danger">{typeof error === 'string' ? error : (error?.message || 'Erreur')}</p>}
           <div className="flex gap-2">
             <motion.button
               type="button"

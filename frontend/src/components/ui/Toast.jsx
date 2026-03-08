@@ -5,6 +5,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, X } from 'lucide-react';
+import { toErrorDisplay } from '../../lib/api';
 
 const icons = {
   success: CheckCircle,
@@ -32,7 +33,7 @@ export default function Toast({ toasts, onDismiss }) {
                   t.type === 'success' ? 'text-green-400' : t.type === 'error' ? 'text-corum-red' : 'text-corum-turquoise'
                 }`}
               />
-              <p className="text-sm text-corum-offwhite flex-1">{t.message}</p>
+              <p className="text-sm text-corum-offwhite flex-1">{typeof t.message === 'string' ? t.message : toErrorDisplay(t.message)}</p>
               <button
                 type="button"
                 onClick={() => onDismiss(t.id)}

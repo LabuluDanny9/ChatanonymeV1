@@ -110,7 +110,7 @@ export default function Topics() {
 
       <div className="max-w-[680px] mx-auto px-4 py-6">
         {error && (
-          <div className="p-4 rounded-xl bg-app-danger/20 text-app-danger border border-app-danger/30 mb-4">{error}</div>
+          <div className="p-4 rounded-xl bg-app-danger/20 text-app-danger border border-app-danger/30 mb-4">{typeof error === 'string' ? error : (error?.message || 'Erreur')}</div>
         )}
 
         {filteredTopics.length === 0 ? (

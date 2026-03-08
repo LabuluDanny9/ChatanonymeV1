@@ -37,6 +37,14 @@ export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
   return fallback;
 };
 
+/** Garantit une chaîne pour l'affichage (évite React #31) */
+export const toErrorDisplay = (val) => {
+  if (val == null) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && typeof val.message === 'string') return val.message;
+  return String(val);
+};
+
 const api = axios.create({
   baseURL: API_URL || '',
   headers: { 'Content-Type': 'application/json' },

@@ -130,7 +130,7 @@ export default function TopicView() {
       toast.success('Commentaire supprimé');
       fetchComments();
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Impossible de supprimer');
+      toast.error(getErrorMessage(err, 'Impossible de supprimer'));
     }
   };
 
@@ -144,8 +144,7 @@ export default function TopicView() {
         toast.success('Message envoyé à l\'administrateur');
       }
     } catch (err) {
-      const msg = err.response?.data?.error || 'Impossible d\'envoyer';
-      toast.error(typeof msg === 'string' ? msg : 'Impossible d\'envoyer');
+      toast.error(getErrorMessage(err, 'Impossible d\'envoyer'));
       throw err;
     }
   };
