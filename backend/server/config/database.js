@@ -32,7 +32,11 @@ if (isVercel && !dbUrl) {
     : path.join(__dirname, '../../data/silencehub.json');
   const dir = path.dirname(dbPath);
 
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    console.warn('[db] mkdir failed for JSON store:', err?.message);
+  }
 
   const seedTopics = require('../scripts/seedTopics');
   const initStore = () => {

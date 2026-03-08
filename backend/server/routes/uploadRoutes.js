@@ -6,11 +6,20 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const uploadController = require('../controllers/uploadController');
 const authUserOrAdmin = require('../middleware/authUserOrAdmin');
 
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// Sur Vercel : filesystem read-only sauf /tmp
+const isVercel = !!process.env.VERCEL;
+const uploadDir = isVercel
+  ? path.join(os.tmpdir(), 'chatanonyme-uploads')
+  : path.join(__dirname, '../uploads');
+try {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (err) {
+  console.warn('[upload] mkdir failed, uploads may fail:', err?.message);
+}
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {

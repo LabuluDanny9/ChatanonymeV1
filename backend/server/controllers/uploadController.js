@@ -4,16 +4,23 @@
 
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-const UPLOAD_DIR = path.join(__dirname, '../uploads');
+// Sur Vercel : filesystem read-only sauf /tmp
+const isVercel = !!process.env.VERCEL;
+const UPLOAD_DIR = isVercel
+  ? path.join(os.tmpdir(), 'chatanonyme-uploads')
+  : path.join(__dirname, '../uploads');
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_IMAGE = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const ALLOWED_DOC = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
 const ALLOWED_AUDIO = ['audio/webm', 'audio/x-webm', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp4'];
 
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+} catch (err) {
+  console.warn('[upload] mkdir failed:', err?.message);
 }
 
 function getFileType(mimetype) {

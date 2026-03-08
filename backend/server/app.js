@@ -13,6 +13,7 @@ const { sanitizeBody } = require('./middleware/sanitize');
 const errorHandler = require('./middleware/errorHandler');
 
 const path = require('path');
+const os = require('os');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
@@ -37,8 +38,11 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(sanitizeBody);
 
-// Fichiers uploadés (statique)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Fichiers uploadés (statique) — sur Vercel : /tmp car filesystem read-only
+const uploadsDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'chatanonyme-uploads')
+  : path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'silencehub' }));
