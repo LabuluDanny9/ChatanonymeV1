@@ -84,6 +84,13 @@ EXCEPTION
 END;
 $$;
 
+-- Permissions : permettre à l'auth Supabase d'exécuter le trigger
+DO $$
+BEGIN
+  GRANT EXECUTE ON FUNCTION public.handle_new_auth_user() TO supabase_auth_admin;
+EXCEPTION WHEN OTHERS THEN NULL; -- ignorer si le rôle n'existe pas
+END $$;
+
 -- Trigger sur auth.users (Supabase gère auth schema)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

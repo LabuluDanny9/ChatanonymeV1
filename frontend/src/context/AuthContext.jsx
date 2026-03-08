@@ -252,7 +252,8 @@ export function AuthProvider({ children }) {
           throw new Error('Le nombre maximum d\'administrateurs (3) est atteint.');
         }
         if (msg.includes('Database error') || msg.includes('handle_new_auth_user')) {
-          throw new Error(msg.includes('handle_new_auth_user') ? msg : 'Erreur Supabase. Vérifiez les logs Postgres (Supabase > Logs) ou réexécutez migration-supabase-auth-trigger.sql.');
+          const detail = msg.includes('handle_new_auth_user') ? msg : '';
+          throw new Error(detail || 'Erreur Supabase (trigger). Utilisez un email différent si admin@laparte.app existe déjà. Sinon : Supabase > Logs > Postgres, filtrer "ERROR".');
         }
         if (msg.includes('Compte créé')) throw toError(supaErr, 'Compte créé. Connectez-vous avec votre email et mot de passe.');
         throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Création impossible. Réessayez plus tard.');
