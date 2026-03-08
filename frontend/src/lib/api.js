@@ -26,10 +26,10 @@ export const getErrorMessage = (err, fallback = 'Une erreur est survenue') => {
     if (msg === 'Utilisateur introuvable' || msg === 'Administrateur introuvable') {
       return 'Compte non synchronisé. Déconnectez-vous et reconnectez-vous. Si le problème persiste, exécutez migration-supabase-auth-trigger.sql dans Supabase.';
     }
-    if (msg === 'Token manquant' || msg === 'Token invalide ou expiré' || msg === 'Session expirée') {
+    if (!msg || /token|session|expiré|reconnecter/i.test(msg)) {
       return 'Session expirée. Veuillez vous reconnecter.';
     }
-    return msg || 'Session expirée. Veuillez vous reconnecter.';
+    return msg;
   }
   if (status === 404) {
     return 'Service indisponible. Réessayez plus tard ou contactez l\'administrateur.';
@@ -59,7 +59,21 @@ const api = axios.create({
   baseURL: API_URL || '',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+  timeout: 30000,
 });
+
+/** Force la synchronisation du token depuis localStorage (avant envoi critique) */
+export const ensureAuthToken = () => {
+  try {
+    const userStored = localStorage.getItem('chatanonyme_user');
+    const adminStored = localStorage.getItem('chatanonyme_admin');
+    const p = userStored ? JSON.parse(userStored) : (adminStored ? JSON.parse(adminStored) : null);
+    const token = p?.token;
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {}
+};
 
 // Intercepteur : TOUJOURS ajouter le token pour les routes protégées (priorité localStorage)
 api.interceptors.request.use((config) => {

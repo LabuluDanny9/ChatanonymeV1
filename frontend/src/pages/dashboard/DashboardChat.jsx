@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Send, Mic, Paperclip, Smile, Shield, Image } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api, { getErrorMessage, toErrorDisplay } from '../../lib/api';
+import api, { getErrorMessage, toErrorDisplay, ensureAuthToken } from '../../lib/api';
 import { io } from 'socket.io-client';
 import ChatBubble from '../../components/ChatBubble';
 import VoiceRecorder from '../../components/chat/VoiceRecorder';
@@ -82,7 +82,9 @@ export default function DashboardChat() {
 
   useEffect(() => {
     if (!user) return;
-    const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
+    ensureAuthToken();
+    const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '') ||
+      (() => { try { return JSON.parse(localStorage.getItem('chatanonyme_user') || '{}')?.token; } catch { return null; } })();
     if (!token) return;
     const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socketRef.current = socket;
@@ -118,6 +120,7 @@ export default function DashboardChat() {
 
   useEffect(() => {
     if (!user) return;
+    ensureAuthToken();
     api
       .get('/api/messages')
       .then(({ data }) => {
@@ -131,16 +134,16 @@ export default function DashboardChat() {
       });
   }, [user]);
 
-  const sendMessage = async (payload) => {
+  const sendMessage = async (payload, isRetry = false) => {
     if (sending) return;
     setSending(true);
     setError(null);
+    ensureAuthToken();
     try {
       let body = {};
       if (typeof payload === 'string') {
         body = { content: payload };
       } else if (payload?.type && payload?.url) {
-        // Pièce jointe ou vocal depuis upload API
         const meta = payload.metadata || { url: payload.url, filename: payload.filename, duration: payload.duration };
         body = {
           content: '',
@@ -148,7 +151,6 @@ export default function DashboardChat() {
           metadata: { url: payload.url, filename: payload.filename, ...meta },
         };
       } else if (payload?.type === 'voice' && payload?.data) {
-        // Vocal legacy (base64) — fallback si upload échoue
         body = { content: JSON.stringify(payload) };
       } else {
         body = { content: JSON.stringify(payload) };
@@ -161,6 +163,11 @@ export default function DashboardChat() {
         toast.success('Message envoyé');
       }
     } catch (err) {
+      if (!isRetry && err?.response?.status === 401) {
+        ensureAuthToken();
+        await new Promise((r) => setTimeout(r, 300));
+        return sendMessage(payload, true);
+      }
       const msg = getErrorMessage(err, 'Envoi impossible');
       setError(msg);
       toast.error(msg);

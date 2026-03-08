@@ -6,7 +6,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Image, FileText, File, Music, Video, X } from 'lucide-react';
-import api, { getApiBaseUrl, getErrorMessage } from '../../lib/api';
+import api, { getApiBaseUrl, getErrorMessage, ensureAuthToken } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 const ACCEPT = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,audio/*';
@@ -52,6 +52,7 @@ export default function AttachmentPicker({ onSelect, onClose }) {
     if (!file) return;
     setUploading(true);
     setError(null);
+    ensureAuthToken();
     const formData = new FormData();
     formData.append('file', file);
 

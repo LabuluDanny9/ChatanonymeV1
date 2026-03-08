@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mic, Square, Play, Pause, Send, X } from 'lucide-react';
-import api, { getApiBaseUrl } from '../../lib/api';
+import api, { getApiBaseUrl, ensureAuthToken } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 
 export default function VoiceRecorder({ onSend, onCancel }) {
@@ -82,6 +82,7 @@ export default function VoiceRecorder({ onSend, onCancel }) {
   const handleSend = async () => {
     if (!audioBlob || sending) return;
     setSending(true);
+    ensureAuthToken();
     let payload = null;
     try {
       const formData = new FormData();
