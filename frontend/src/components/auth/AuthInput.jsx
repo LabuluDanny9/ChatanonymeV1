@@ -78,10 +78,12 @@ export default function AuthInput({
         {isPassword && (
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 ${variant === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-corum-gray hover:text-corum-offwhite'}`}
+            tabIndex={-1}
+            aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowPassword(!showPassword); }}
+            className={`absolute right-4 top-1/2 -translate-y-1/2 z-20 cursor-pointer p-1 -m-1 rounded hover:bg-white/5 transition-colors ${variant === 'light' ? 'text-slate-400 hover:text-slate-600' : 'text-corum-gray hover:text-corum-offwhite'}`}
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? <EyeOff className="w-5 h-5" strokeWidth={1.5} /> : <Eye className="w-5 h-5" strokeWidth={1.5} />}
           </button>
         )}
       </div>
