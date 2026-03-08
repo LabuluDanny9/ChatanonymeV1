@@ -12,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import api, { getErrorMessage } from '../../lib/api';
 
 export default function AdminLogin() {
-  const { loginAdmin, isAdmin, setAdminSession } = useAuth();
+  const { loginAdmin, registerAdmin, isAdmin } = useAuth();
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
@@ -67,13 +67,7 @@ export default function AdminLogin() {
     }
     setLoading(true);
     try {
-      const { data } = await api.post('/api/auth/admin/register', {
-        email: form.email.trim(),
-        password: form.password,
-      });
-      if (data.token && data.admin && setAdminSession) {
-        setAdminSession(data.token, data.admin);
-      }
+      await registerAdmin(form.email.trim(), form.password);
     } catch (err) {
       setError(getErrorMessage(err, 'Erreur lors de la création'));
     } finally {

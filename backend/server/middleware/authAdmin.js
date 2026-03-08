@@ -1,5 +1,5 @@
 /**
- * Middleware auth admin - Vérifie JWT administrateur
+ * Middleware auth admin - Vérifie JWT administrateur (API ou Supabase Auth)
  * req.admin = { id, email }
  */
 
@@ -14,11 +14,26 @@ async function authAdmin(req, res, next) {
     if (!token) {
       return res.status(401).json({ error: 'Token admin manquant' });
     }
-    const decoded = jwt.verify(token, config.jwt.secret);
-    if (decoded.type !== 'admin') {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, config.jwt.secret);
+    } catch {
+      if (config.jwt.supabaseSecret) {
+        try {
+          decoded = jwt.verify(token, config.jwt.supabaseSecret);
+          decoded = { adminId: decoded.sub, type: 'admin' };
+        } catch {
+          return res.status(401).json({ error: 'Token invalide ou expiré' });
+        }
+      } else {
+        return res.status(401).json({ error: 'Token invalide ou expiré' });
+      }
+    }
+    if (decoded.type !== 'admin' && !decoded.adminId) {
       return res.status(403).json({ error: 'Accès réservé à l\'administrateur' });
     }
-    const admin = await Admin.findById(decoded.adminId);
+    const adminId = decoded.adminId || decoded.sub;
+    const admin = await Admin.findById(adminId);
     if (!admin) {
       return res.status(401).json({ error: 'Administrateur introuvable' });
     }

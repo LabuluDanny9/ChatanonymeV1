@@ -31,6 +31,12 @@ function userFromSupabaseSession(session) {
   return { id: u.id, pseudo, phone: null, email, photo: u.user_metadata?.photo || null };
 }
 
+function adminFromSupabaseSession(session) {
+  if (!session?.user) return null;
+  const u = session.user;
+  return { id: u.id, email: u.email || '', photo: u.user_metadata?.photo || null };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [admin, setAdmin] = useState(null);
@@ -155,12 +161,94 @@ export function AuthProvider({ children }) {
   }, []);
 
   const loginAdmin = useCallback(async (email, password) => {
-    const { data } = await api.post('/api/auth/admin/login', { email, password });
-    api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-    localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
-    setAdmin(data.admin);
-    setUser(null);
-    return data;
+    try {
+      const { data } = await api.post('/api/auth/admin/login', { email, password });
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
+      setAdmin(data.admin);
+      setUser(null);
+      return data;
+    } catch (apiErr) {
+      if (supabase && email?.includes('@')) {
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        const adminData = adminFromSupabaseSession(data.session);
+        if (!adminData) throw new Error('Connexion impossible.');
+        const token = data.session?.access_token;
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token, admin: adminData }));
+        setAdmin(adminData);
+        setUser(null);
+        return { token, admin: adminData };
+      }
+      throw apiErr;
+    }
+  }, []);
+
+  const registerAdmin = useCallback(async (email, password) => {
+    const payload = { email: email.trim(), password };
+    let lastErr = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data } = await api.post('/api/auth/admin/register', payload);
+        api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+        localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token: data.token, admin: data.admin }));
+        setAdmin(data.admin);
+        setUser(null);
+        return { token: data.token, admin: data.admin };
+      } catch (apiErr) {
+        lastErr = apiErr;
+        if (attempt === 0 && (apiErr?.response?.status >= 500 || apiErr?.code === 'ECONNABORTED' || apiErr?.message?.includes('timeout'))) {
+          await new Promise((r) => setTimeout(r, 800));
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { is_admin: 'true' } },
+        });
+        if (error) throw error;
+        let token = data.session?.access_token;
+        let adminData = adminFromSupabaseSession(data.session);
+        if (!adminData && data.user) {
+          const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+          if (!signInErr && signInData?.session) {
+            token = signInData.session.access_token;
+            adminData = adminFromSupabaseSession(signInData.session);
+          }
+        }
+        if (!token || !adminData) throw new Error('Compte créé. Connectez-vous avec votre email et mot de passe.');
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem(STORAGE_ADMIN, JSON.stringify({ token, admin: adminData }));
+        setAdmin(adminData);
+        setUser(null);
+        return { token, admin: adminData };
+      } catch (supaErr) {
+        const msg = supaErr?.message || '';
+        if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('already exists')) {
+          throw new Error('Cet email est déjà utilisé.');
+        }
+        if (msg.includes('rate limit') || msg.includes('too many')) {
+          throw new Error('Trop de tentatives. Réessayez dans quelques minutes.');
+        }
+        if (msg.includes('Email signups are disabled') || msg.includes('signups are disabled')) {
+          throw new Error('Inscription par email désactivée. Vérifiez la configuration Supabase (Authentication > Providers > Email > Enable Email Signup).');
+        }
+        if (msg.includes('maximum') && msg.includes('administrateurs')) {
+          throw new Error('Le nombre maximum d\'administrateurs (3) est atteint.');
+        }
+        if (msg.includes('Compte créé')) throw supaErr;
+        throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Création impossible. Réessayez plus tard.');
+      }
+    }
+    throw lastErr;
   }, []);
 
   const setAdminSession = useCallback((token, adminData) => {
@@ -245,6 +333,7 @@ export function AuthProvider({ children }) {
     loginUser,
     registerUser,
     loginAdmin,
+    registerAdmin,
     setAdminSession,
     logout,
     updateAdminPhoto,

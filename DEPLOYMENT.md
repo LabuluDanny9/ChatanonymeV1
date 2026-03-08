@@ -49,7 +49,7 @@ Pour contourner les erreurs 500 à l'inscription, utilise l'authentification Sup
    - `REACT_APP_SUPABASE_ANON_KEY` = clé anon (Settings > API)
    - `SUPABASE_JWT_SECRET` = JWT Secret (Settings > API)
 
-L'inscription et la connexion passent alors directement par Supabase, sans appeler l'API.
+L'inscription et la connexion (utilisateurs et administrateurs) passent alors par Supabase en secours si l'API échoue.
 
 **Limite Supabase :** Par défaut, Supabase limite à ~4 inscriptions/heure (SMTP intégré). En cas de « email rate limit exceeded » :
 - **Solution 1** : Supabase → **Project Settings** → **Auth** → **SMTP** → configurer un SMTP personnalisé (Gmail, SendGrid, etc.)
