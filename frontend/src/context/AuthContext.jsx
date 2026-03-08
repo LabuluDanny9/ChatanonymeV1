@@ -196,7 +196,7 @@ export function AuthProvider({ children }) {
     const payload = { email: email.trim(), password };
     let lastErr = null;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const { data } = await api.post('/api/auth/admin/register', payload);
         api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
@@ -206,8 +206,8 @@ export function AuthProvider({ children }) {
         return { token: data.token, admin: data.admin };
       } catch (apiErr) {
         lastErr = apiErr;
-        if (attempt === 0 && (apiErr?.response?.status >= 500 || apiErr?.code === 'ECONNABORTED' || apiErr?.message?.includes('timeout'))) {
-          await new Promise((r) => setTimeout(r, 800));
+        if (attempt < 2 && (apiErr?.response?.status >= 500 || apiErr?.code === 'ECONNABORTED' || apiErr?.message?.includes('timeout'))) {
+          await new Promise((r) => setTimeout(r, 600 + attempt * 400));
           continue;
         }
         break;
@@ -250,6 +250,9 @@ export function AuthProvider({ children }) {
         }
         if (msg.includes('maximum') && msg.includes('administrateurs')) {
           throw new Error('Le nombre maximum d\'administrateurs (3) est atteint.');
+        }
+        if (msg.includes('Database error') || msg.includes('handle_new_auth_user')) {
+          throw new Error(msg.includes('handle_new_auth_user') ? msg : 'Erreur Supabase. Vérifiez les logs Postgres (Supabase > Logs) ou réexécutez migration-supabase-auth-trigger.sql.');
         }
         if (msg.includes('Compte créé')) throw toError(supaErr, 'Compte créé. Connectez-vous avec votre email et mot de passe.');
         throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Création impossible. Réessayez plus tard.');

@@ -60,8 +60,8 @@ L'inscription et la connexion (utilisateurs et administrateurs) passent alors pa
 Le trigger sur `auth.users` a échoué. Causes possibles :
 
 - **Inscription admin** : l'email existe déjà (ex. `admin@laparte.app` du seed) → utiliser un autre email ou se connecter avec les identifiants existants
-- **Colonnes manquantes** : le trigger fournit maintenant `created_at`, `updated_at` explicitement
-- **Logs** : Supabase → Logs → Postgres logs pour voir l'erreur exacte
+- **RLS activé** : si Row Level Security est activé sur `admins` ou `users`, désactiver-le ou ajouter une policy permettant les inserts
+- **Logs** : Supabase → Logs → Postgres logs — l'erreur détaillée apparaît maintenant (préfixe `handle_new_auth_user:`)
 
 Réexécuter `migration-supabase-auth-trigger.sql` (version mise à jour) dans le SQL Editor.
 

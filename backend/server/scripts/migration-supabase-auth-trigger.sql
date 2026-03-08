@@ -16,8 +16,13 @@ ALTER TABLE admins ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Fonction trigger: créer users OU admins depuis auth.users
 -- Si raw_user_meta_data->>'is_admin' = 'true' → admins, sinon → users
+-- SET search_path = public évite les erreurs de schéma avec SECURITY DEFINER
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_pseudo TEXT;
   v_pseudo_base TEXT;
@@ -25,11 +30,11 @@ DECLARE
   v_is_admin BOOLEAN;
   v_admin_count INT;
 BEGIN
-  v_is_admin := (NEW.raw_user_meta_data->>'is_admin')::text = 'true';
+  v_is_admin := COALESCE(NEW.raw_user_meta_data->>'is_admin', '') = 'true';
 
   IF v_is_admin THEN
     -- Vérifier si l'email existe déjà (seed ou API)
-    IF EXISTS (SELECT 1 FROM public.admins WHERE LOWER(email) = LOWER(NEW.email)) THEN
+    IF EXISTS (SELECT 1 FROM public.admins WHERE LOWER(email) = LOWER(COALESCE(NEW.email, ''))) THEN
       RAISE EXCEPTION 'Cet email est déjà utilisé par un administrateur.';
     END IF;
     -- Vérifier la limite de 3 admins
@@ -37,15 +42,15 @@ BEGIN
     IF v_admin_count >= 3 THEN
       RAISE EXCEPTION 'Nombre maximum d''administrateurs (3) atteint.';
     END IF;
-    -- Insérer dans admins (toutes les colonnes explicites pour éviter erreurs)
+    -- Insérer dans admins (password_hash nullable après migration)
     INSERT INTO public.admins (id, email, password_hash, photo, created_at, updated_at)
     VALUES (
       NEW.id,
-      LOWER(NEW.email),
-      'supabase_auth',
-      COALESCE(NULLIF(trim(NEW.raw_user_meta_data->>'photo'), ''), ''),
-      NOW(),
-      NOW()
+      LOWER(COALESCE(NEW.email, '')),
+      NULL,
+      COALESCE(NULLIF(trim(COALESCE(NEW.raw_user_meta_data->>'photo', '')), ''), ''),
+      COALESCE(NOW(), CURRENT_TIMESTAMP),
+      COALESCE(NOW(), CURRENT_TIMESTAMP)
     );
   ELSE
     -- Insérer dans users (pseudo dans metadata, unique)
@@ -73,8 +78,11 @@ BEGIN
   END IF;
 
   RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE EXCEPTION 'handle_new_auth_user: %', SQLERRM;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger sur auth.users (Supabase gère auth schema)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
