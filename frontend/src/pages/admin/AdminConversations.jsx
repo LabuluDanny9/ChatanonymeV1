@@ -15,7 +15,7 @@ import VoiceRecorder from '../../components/chat/VoiceRecorder';
 import AttachmentPicker from '../../components/chat/AttachmentPicker';
 import EmojiPicker from 'emoji-picker-react';
 
-import { SOCKET_API_URL, getSocketOptions } from '../../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../../lib/socketConfig';
 
 const statusLabels = { open: 'Ouverte', closed: 'Fermée', banned: 'Banni', active: 'Actif' };
 const statusColors = { open: 'text-admin-success', closed: 'text-admin-muted', banned: 'text-admin-danger', active: 'text-admin-success' };
@@ -102,7 +102,15 @@ export default function AdminConversations() {
     fetchConversations();
   }, [fetchConversations]);
 
+  // Polling liste conversations quand WebSocket désactivé (Vercel serverless)
   useEffect(() => {
+    if (!WS_ENABLED) {
+      const interval = setInterval(fetchConversations, 8000);
+      return () => clearInterval(interval);
+    }
+  }, [WS_ENABLED, fetchConversations]);
+
+  const refreshSelectedMessages = useCallback(() => {
     if (!selected || !token) return;
     ensureAuthToken('admin');
     api.get(`/api/admin/conversations/${selected.id}`).then(({ data }) => {
@@ -112,7 +120,18 @@ export default function AdminConversations() {
   }, [selected?.id, token]);
 
   useEffect(() => {
-    if (!token) return;
+    refreshSelectedMessages();
+  }, [refreshSelectedMessages]);
+
+  // Polling quand WebSocket désactivé (Vercel serverless)
+  useEffect(() => {
+    if (!selected || !token || WS_ENABLED) return;
+    const interval = setInterval(refreshSelectedMessages, 5000);
+    return () => clearInterval(interval);
+  }, [selected?.id, token, WS_ENABLED, refreshSelectedMessages]);
+
+  useEffect(() => {
+    if (!token || !WS_ENABLED) return; // Pas de WebSocket sur Vercel serverless (404 /ws)
     const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socket.on('message:new', (payload) => {
       if (payload.conversationId === selected?.id) {

@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useToast } from '../context/ToastContext';
 
-import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
 
 export default function NotificationSocketListener() {
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export default function NotificationSocketListener() {
   const toast = useToast();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !WS_ENABLED) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
 

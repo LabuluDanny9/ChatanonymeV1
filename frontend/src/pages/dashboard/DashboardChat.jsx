@@ -3,7 +3,7 @@
  * Interface conversation utilisateur — layout optimisé
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Send, Mic, Paperclip, Smile, Shield, Image } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -15,7 +15,7 @@ import AttachmentPicker from '../../components/chat/AttachmentPicker';
 import EmojiPicker from 'emoji-picker-react';
 import { useToast } from '../../context/ToastContext';
 
-import { SOCKET_API_URL, getSocketOptions } from '../../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../../lib/socketConfig';
 
 function formatDateSeparator(dateStr) {
   const d = new Date(dateStr);
@@ -86,6 +86,7 @@ export default function DashboardChat() {
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '') ||
       (() => { try { return JSON.parse(localStorage.getItem('chatanonyme_user') || '{}')?.token; } catch { return null; } })();
     if (!token) return;
+    if (!WS_ENABLED) return; // Pas de WebSocket sur Vercel serverless (404 /ws)
     const socket = io(SOCKET_API_URL, getSocketOptions(token));
     socketRef.current = socket;
     socket.on('message:new', (payload) => {
@@ -118,21 +119,30 @@ export default function DashboardChat() {
     api.get('/api/config').then(({ data }) => setAdminAvatar(data.adminAvatar || '')).catch(() => {});
   }, []);
 
-  useEffect(() => {
+  const refreshMessages = useCallback(() => {
     if (!user) return;
     ensureAuthToken('user');
-    api
-      .get('/api/messages')
-      .then(({ data }) => {
-        setMessages(data.messages || []);
-        setTimeout(scrollToBottom, 100);
-        api.post('/api/messages/mark-read').catch(() => {});
-      })
-      .catch((err) => {
-        setError(getErrorMessage(err, 'Erreur chargement'));
-        toast.error('Impossible de charger les messages');
-      });
+    api.get('/api/messages').then(({ data }) => {
+      setMessages(data.messages || []);
+      setTimeout(scrollToBottom, 100);
+      api.post('/api/messages/mark-read').catch(() => {});
+    }).catch((err) => {
+      setError(getErrorMessage(err, 'Erreur chargement'));
+      toast.error('Impossible de charger les messages');
+    });
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    refreshMessages();
+  }, [user, refreshMessages]);
+
+  // Polling quand WebSocket désactivé (Vercel serverless)
+  useEffect(() => {
+    if (!user || WS_ENABLED) return;
+    const interval = setInterval(refreshMessages, 5000);
+    return () => clearInterval(interval);
+  }, [user, WS_ENABLED, refreshMessages]);
 
   const sendMessage = async (payload, isRetry = false) => {
     if (sending) return;

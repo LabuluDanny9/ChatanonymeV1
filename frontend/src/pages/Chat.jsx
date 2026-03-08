@@ -4,7 +4,7 @@
  * Design corporate premium
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +12,7 @@ import api, { getErrorMessage, toErrorDisplay } from '../lib/api';
 import { io } from 'socket.io-client';
 import ChatBubble from '../components/ChatBubble';
 import { useToast } from '../context/ToastContext';
-import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
 
 export default function Chat() {
   const { user } = useAuth();
@@ -49,7 +49,7 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !WS_ENABLED) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
     const socket = io(SOCKET_API_URL, getSocketOptions(token));
@@ -62,19 +62,27 @@ export default function Chat() {
     return () => socket.disconnect();
   }, [user]);
 
+  const refreshMessages = useCallback(() => {
+    if (!user) return;
+    api.get('/api/messages').then(({ data }) => {
+      setMessages(data.messages || []);
+      setTimeout(scrollToBottom, 100);
+    }).catch((err) => {
+      setError(err.response?.data?.error || 'Erreur chargement');
+      toast.error('Impossible de charger les messages');
+    });
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
-    api
-      .get('/api/messages')
-      .then(({ data }) => {
-        setMessages(data.messages || []);
-        setTimeout(scrollToBottom, 100);
-      })
-      .catch((err) => {
-        setError(err.response?.data?.error || 'Erreur chargement');
-        toast.error('Impossible de charger les messages');
-      });
-  }, [user]);
+    refreshMessages();
+  }, [user, refreshMessages]);
+
+  useEffect(() => {
+    if (!user || WS_ENABLED) return;
+    const interval = setInterval(refreshMessages, 5000);
+    return () => clearInterval(interval);
+  }, [user, WS_ENABLED, refreshMessages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

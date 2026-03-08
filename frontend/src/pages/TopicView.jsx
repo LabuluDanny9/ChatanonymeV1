@@ -16,7 +16,7 @@ import Comment from '../components/forum/Comment';
 import CommentInput from '../components/forum/CommentInput';
 import { getErrorMessage } from '../lib/api';
 import { decodeHtmlEntities } from '../lib/textUtils';
-import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
 
 function buildCommentTree(comments) {
   const byId = new Map();
@@ -150,6 +150,7 @@ export default function TopicView() {
   };
 
   useEffect(() => {
+    if (!WS_ENABLED) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token || !id) return;
     const socket = io(SOCKET_API_URL, getSocketOptions(token));

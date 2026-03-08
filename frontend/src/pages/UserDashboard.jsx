@@ -13,7 +13,7 @@ import { decodeHtmlEntities } from '../lib/textUtils';
 import { useAuth } from '../context/AuthContext';
 import Chat from './Chat';
 
-import { SOCKET_API_URL, getSocketOptions } from '../lib/socketConfig';
+import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
 
 const tabs = [
   { id: 'chat', label: 'Chat', icon: MessageCircle },
@@ -41,6 +41,7 @@ export default function UserDashboard() {
   }, []);
 
   useEffect(() => {
+    if (!WS_ENABLED) return;
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '');
     if (!token) return;
     const socket = io(SOCKET_API_URL, getSocketOptions(token));
