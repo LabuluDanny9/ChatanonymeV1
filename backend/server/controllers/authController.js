@@ -157,13 +157,11 @@ async function login(req, res, next) {
   }
 }
 
-const MAX_ADMINS = 3;
-
-// GET /api/auth/admin/can-register - Vérifie si la création d'admin est possible (moins de 3 admins)
+// GET /api/auth/admin/can-register - Vérifie si la création d'admin est possible (toujours autorisé)
 async function canRegisterAdmin(req, res, next) {
   try {
     const count = await Admin.count();
-    return res.json({ canRegister: count < MAX_ADMINS, count, max: MAX_ADMINS });
+    return res.json({ canRegister: true, count });
   } catch (err) {
     console.error('[canRegisterAdmin]', err?.message, err?.code);
     if (isDbConnectionError(err) || isDbSchemaError(err)) {
@@ -175,7 +173,7 @@ async function canRegisterAdmin(req, res, next) {
   }
 }
 
-// POST /api/auth/admin/register - Créer un compte admin (jusqu'à 3 admins)
+// POST /api/auth/admin/register - Créer un compte admin (inscription libre)
 async function registerAdmin(req, res, next) {
   try {
     const { email, password } = req.body || {};
@@ -184,10 +182,6 @@ async function registerAdmin(req, res, next) {
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
-    }
-    const count = await Admin.count();
-    if (count >= MAX_ADMINS) {
-      return res.status(403).json({ error: `Le nombre maximum d'administrateurs (${MAX_ADMINS}) est atteint.` });
     }
     const existingEmail = await Admin.findByEmail(email.trim());
     if (existingEmail) {

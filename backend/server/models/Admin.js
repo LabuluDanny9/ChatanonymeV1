@@ -56,6 +56,13 @@ const Admin = {
     return rows[0]?.count ?? 0;
   },
 
+  async findAll() {
+    const { rows } = await pool.query(
+      'SELECT id, email, photo, created_at FROM admins ORDER BY created_at ASC'
+    );
+    return rows;
+  },
+
   async getFirstPhoto() {
     const { rows } = await pool.query('SELECT photo FROM admins LIMIT 1');
     return rows[0]?.photo || null;

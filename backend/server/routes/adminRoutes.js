@@ -26,5 +26,7 @@ router.put('/topics/:id', adminController.updateTopic);
 router.delete('/topics/:id', adminController.deleteTopic);
 router.post('/broadcast', adminController.sendBroadcast);
 router.put('/photo', adminController.updatePhoto);
+router.get('/admins', adminController.listAdmins);
+router.post('/admins', adminController.createAdmin);
 
 module.exports = router;

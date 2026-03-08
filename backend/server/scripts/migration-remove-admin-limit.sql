@@ -1,22 +1,8 @@
 -- =============================================================================
--- Migration: Sync Supabase Auth -> public.users ET public.admins
--- Quand un utilisateur s'inscrit via Supabase Auth (anon key), créer users ou admins
--- Exécuter dans Supabase SQL Editor
--- =============================================================================
--- PRÉREQUIS Supabase Dashboard:
--- 1. Authentication > Providers > Email > activer "Enable Email Signup"
--- 2. Authentication > Providers > Email > désactiver "Confirm email"
+-- Migration: Supprimer la limite de 3 administrateurs du trigger Supabase
+-- Exécuter dans Supabase SQL Editor après migration-supabase-auth-trigger.sql
 -- =============================================================================
 
--- Rendre password_hash nullable pour les users créés via Supabase Auth
-ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
-
--- Rendre password_hash nullable pour les admins créés via Supabase Auth
-ALTER TABLE admins ALTER COLUMN password_hash DROP NOT NULL;
-
--- Fonction trigger: créer users OU admins depuis auth.users
--- Si raw_user_meta_data->>'is_admin' = 'true' → admins, sinon → users
--- SET search_path = public évite les erreurs de schéma avec SECURITY DEFINER
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -36,7 +22,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM public.admins WHERE LOWER(email) = LOWER(COALESCE(NEW.email, ''))) THEN
       RAISE EXCEPTION 'Cet email est déjà utilisé par un administrateur.';
     END IF;
-    -- Insérer dans admins (password_hash nullable après migration)
+    -- Plus de limite sur le nombre d'admins
     INSERT INTO public.admins (id, email, password_hash, photo, created_at, updated_at)
     VALUES (
       NEW.id,
@@ -52,7 +38,6 @@ BEGIN
     v_pseudo_base := regexp_replace(trim(v_pseudo_base), '[^a-zA-Z0-9_-]', '_', 'g');
     v_pseudo_base := NULLIF(regexp_replace(v_pseudo_base, '_+', '_', 'g'), '');
     v_pseudo_base := COALESCE(v_pseudo_base, 'user');
-    -- Garantir unicité du pseudo (éviter conflit avec users créés via API)
     v_pseudo := v_pseudo_base;
     IF EXISTS (SELECT 1 FROM public.users WHERE LOWER(pseudo) = LOWER(v_pseudo_base)) THEN
       v_pseudo := v_pseudo_base || '_' || substr(replace(NEW.id::text, '-', ''), 1, 8);
@@ -77,18 +62,3 @@ EXCEPTION
     RAISE EXCEPTION 'handle_new_auth_user: %', SQLERRM;
 END;
 $$;
-
--- Permissions : permettre à l'auth Supabase d'exécuter le trigger
-DO $$
-BEGIN
-  GRANT EXECUTE ON FUNCTION public.handle_new_auth_user() TO supabase_auth_admin;
-EXCEPTION WHEN OTHERS THEN NULL; -- ignorer si le rôle n'existe pas
-END $$;
-
--- Trigger sur auth.users (Supabase gère auth schema)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_auth_user();
-
-COMMENT ON FUNCTION public.handle_new_auth_user IS 'Sync Supabase Auth signup -> public.users ou public.admins (is_admin dans raw_user_meta_data)';

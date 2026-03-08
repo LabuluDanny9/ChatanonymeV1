@@ -255,9 +255,6 @@ export function AuthProvider({ children }) {
         if (msg.includes('Email signups are disabled') || msg.includes('signups are disabled')) {
           throw new Error('Inscription par email désactivée. Vérifiez la configuration Supabase (Authentication > Providers > Email > Enable Email Signup).');
         }
-        if (msg.includes('maximum') && msg.includes('administrateurs')) {
-          throw new Error('Le nombre maximum d\'administrateurs (3) est atteint.');
-        }
         if (msg.includes('Database error') || msg.includes('handle_new_auth_user')) {
           const detail = msg.includes('handle_new_auth_user') ? msg : '';
           throw new Error(detail || 'Erreur Supabase (trigger). Utilisez un email différent si admin@laparte.app existe déjà. Sinon : Supabase > Logs > Postgres, filtrer "ERROR".');

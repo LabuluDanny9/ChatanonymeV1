@@ -19,6 +19,7 @@ import {
   Search,
   Settings,
   ShieldAlert,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/admin/users', icon: Users, label: 'Utilisateurs' },
   { to: '/admin/conversations', icon: MessageCircle, label: 'Messages' },
   { to: '/admin/topics', icon: FileText, label: 'Forum' },
+  { to: '/admin/admins', icon: Shield, label: 'Administrateurs' },
   { to: '/admin/reports', icon: ShieldAlert, label: 'Signalements' },
   { to: '/admin/settings', icon: Settings, label: 'Paramètres' },
 ];
@@ -40,6 +42,7 @@ function Breadcrumb() {
     users: 'Utilisateurs',
     conversations: 'Messages',
     topics: 'Forum',
+    admins: 'Administrateurs',
     reports: 'Signalements',
     settings: 'Paramètres',
   };

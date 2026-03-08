@@ -332,6 +332,42 @@ async function updatePhoto(req, res, next) {
   }
 }
 
+// GET /api/admin/admins - Liste des administrateurs
+async function listAdmins(req, res, next) {
+  try {
+    const admins = await Admin.findAll();
+    return res.json({ admins });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/admins - Créer un administrateur (par un admin connecté)
+async function createAdmin(req, res, next) {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { email, password } = req.body || {};
+    if (!email?.trim() || !password) {
+      return res.status(400).json({ error: 'Email et mot de passe requis' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+    }
+    const existing = await Admin.findByEmail(email.trim());
+    if (existing) {
+      return res.status(400).json({ error: 'Cet email est déjà utilisé par un administrateur' });
+    }
+    const hash = await bcrypt.hash(password, 12);
+    const admin = await Admin.create(email.trim().toLowerCase(), hash, '');
+    await AuditLog.create(req.admin.id, 'admin.create', 'admin', admin.id, null, getClientIp(req));
+    return res.status(201).json({
+      admin: { id: admin.id, email: admin.email, photo: admin.photo, created_at: admin.created_at },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getStats,
   listUsers,
@@ -350,4 +386,6 @@ module.exports = {
   replyPrivateToComment,
   sendBroadcast,
   updatePhoto,
+  listAdmins,
+  createAdmin,
 };

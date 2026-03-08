@@ -18,13 +18,10 @@ export default function AdminLogin() {
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [adminCount, setAdminCount] = useState(0);
-
   useEffect(() => {
     api.get('/api/auth/admin/can-register')
       .then(({ data }) => {
-        setAdminCount(data.count ?? 0);
-        if (data.count === 0) setMode('register');
+        if ((data.count ?? 0) === 0) setMode('register');
       })
       .catch((err) => {
         // 503 = DB non configurée → afficher formulaire quand même (login/register)
@@ -147,7 +144,7 @@ export default function AdminLogin() {
                   mode === 'register' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'
                 }`}
               >
-                <UserPlus className="w-4 h-4" /> Créer un compte {adminCount > 0 && `(${adminCount}/3)`}
+                <UserPlus className="w-4 h-4" /> Créer un compte
               </button>
             </div>
 
@@ -212,7 +209,7 @@ export default function AdminLogin() {
                   transition={{ duration: 0.2 }}
                 >
                   <h2 className="text-xl font-bold text-slate-800 mb-1">Créer un compte administrateur</h2>
-                  <p className="text-sm text-chat-muted mb-6">La plateforme peut avoir jusqu'à 3 administrateurs. Créez un compte pour rejoindre l'équipe.</p>
+                  <p className="text-sm text-chat-muted mb-6">Créez un compte administrateur pour rejoindre l'équipe de gestion.</p>
 
                   <form onSubmit={handleRegister} className="space-y-5">
                     {error && (
