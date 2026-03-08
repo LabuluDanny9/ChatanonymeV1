@@ -10,10 +10,5 @@ const app = require('../backend/server/app');
 app.set('io', null);
 
 module.exports = (req, res) => {
-  try {
-    app(req, res);
-  } catch (err) {
-    console.error('[api] Erreur avant Express:', err?.message, err?.stack);
-    res.status(500).json({ error: err?.message || 'Erreur serveur' });
-  }
+  app(req, res);
 };

@@ -29,7 +29,10 @@ function normalizeContent(body) {
 // POST /api/messages - Envoyer un message (user anonyme)
 async function sendMessage(req, res, next) {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Session expirée. Reconnectez-vous.' });
+    }
     const payload = normalizeContent(req.body);
     if (!payload) {
       return res.status(400).json({ error: 'Contenu du message requis' });
@@ -41,13 +44,14 @@ async function sendMessage(req, res, next) {
       userId,
       payload.content,
       payload.messageType,
-      payload.metadata,
+      payload.metadata || {},
       payload.topicId
     );
     const io = req.app.get('io');
-    if (io) io.to('admin').emit('message:new', { conversationId: conversation.id, userId: userId, message });
+    if (io) io.to('admin').emit('message:new', { conversationId: conversation.id, userId, message });
     return res.status(201).json(message);
   } catch (err) {
+    console.error('[sendMessage]', err?.message, err?.code);
     next(err);
   }
 }
