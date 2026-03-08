@@ -51,35 +51,33 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Intercepteur : ajouter le token pour toutes les routes API sauf auth/config
+// Intercepteur : TOUJOURS ajouter le token pour les routes protégées (priorité localStorage)
 api.interceptors.request.use((config) => {
-  const url = (config.baseURL || '') + (config.url || '');
+  const url = String((config.baseURL || '') + (config.url || ''));
   const isApiCall = url.includes('/api/');
   const isPublic = url.includes('/api/auth/') || url.includes('/api/config') || url.includes('/api/debug-setup') || url.includes('/api/health-db');
-  const needsAuth = isApiCall && !isPublic && !config.headers.Authorization;
-  if (needsAuth) {
-    try {
+  if (!isApiCall || isPublic) return config;
+
+  try {
+    let token = (config.headers?.Authorization || api.defaults.headers?.common?.Authorization || '')
+      .replace(/^Bearer\s+/i, '');
+    if (!token) {
       const adminStored = localStorage.getItem('chatanonyme_admin');
       const userStored = localStorage.getItem('chatanonyme_user');
-      let token = null;
       if (url.includes('/api/admin')) {
-        if (adminStored) {
-          const parsed = JSON.parse(adminStored);
-          token = parsed?.token;
-        }
+        const p = adminStored ? JSON.parse(adminStored) : null;
+        token = p?.token || '';
       } else {
-        if (userStored) {
-          const parsed = JSON.parse(userStored);
-          token = parsed?.token;
-        }
-        if (!token && adminStored) {
-          const parsed = JSON.parse(adminStored);
-          token = parsed?.token;
-        }
+        const pUser = userStored ? JSON.parse(userStored) : null;
+        const pAdmin = adminStored ? JSON.parse(adminStored) : null;
+        token = pUser?.token || pAdmin?.token || '';
       }
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-    } catch {}
-  }
+    }
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {}
   return config;
 });
 
@@ -94,38 +92,13 @@ api.setAdminToken = (token) => {
   else delete api.defaults.headers.common['Authorization'];
 };
 
-// Intercepteur : token expiré ou invalide → déconnexion et redirection
-// Période de grâce pour éviter redirection immédiate après login
-let lastAuthTime = typeof window !== 'undefined' ? Date.now() : 0;
-api.resetAuthGracePeriod = () => { lastAuthTime = Date.now(); };
+// Intercepteur 401 : NE PAS rediriger automatiquement (évite déconnexion intempestive)
+// Les erreurs sont propagées aux composants qui affichent le message
+// L'utilisateur peut se déconnecter manuellement via le menu
+api.resetAuthGracePeriod = () => {};
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    const status = err.response?.status;
-    const url = (err.config?.baseURL || '') + (err.config?.url || '');
-    const isAuthRoute = url.includes('/api/auth/');
-    if (status !== 401 || isAuthRoute) return Promise.reject(err);
-
-    const msg = typeof err.response?.data?.error === 'string' ? err.response.data.error : '';
-    const isSessionError = [
-      'Token invalide ou expiré', 'Session expirée', 'Token manquant', 'Token requis',
-      'Token admin manquant', 'Utilisateur introuvable', 'Administrateur introuvable',
-    ].includes(msg);
-    const hadAuth = !!err.config?.headers?.Authorization;
-
-    // Ne pas rediriger pendant 3s après dernier login (évite race)
-    const graceMs = 3000;
-    if (Date.now() - lastAuthTime < graceMs) return Promise.reject(err);
-
-    if (isSessionError || hadAuth) {
-      localStorage.removeItem('chatanonyme_user');
-      localStorage.removeItem('chatanonyme_admin');
-      delete api.defaults.headers.common['Authorization'];
-      const isAdmin = url.includes('/api/admin');
-      window.location.href = isAdmin ? '/admin' : '/connexion';
-    }
-    return Promise.reject(err);
-  }
+  (err) => Promise.reject(err)
 );
 
 export default api;

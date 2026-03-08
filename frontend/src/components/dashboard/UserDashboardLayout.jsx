@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -20,6 +20,7 @@ import {
   X,
   Search,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -36,7 +37,13 @@ const navItems = [
 
 export default function UserDashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/connexion');
+  };
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -114,6 +121,14 @@ export default function UserDashboardLayout() {
             <Settings className="w-5 h-5" strokeWidth={1.5} />
             Paramètres
           </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-app-muted hover:bg-app-danger/20 hover:text-app-danger w-full transition-all"
+          >
+            <LogOut className="w-5 h-5" strokeWidth={1.5} />
+            Déconnexion
+          </button>
           <button
             type="button"
             onClick={toggleTheme}

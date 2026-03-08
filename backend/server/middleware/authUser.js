@@ -33,7 +33,7 @@ async function authUser(req, res, next) {
       return res.status(403).json({ error: 'Accès réservé aux utilisateurs' });
     }
     const userId = decoded.userId || decoded.sub;
-    const user = await User.findById(userId);
+    let user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({ error: 'Utilisateur introuvable' });
     }
