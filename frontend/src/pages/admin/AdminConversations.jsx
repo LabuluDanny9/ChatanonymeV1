@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
 import { Send, Lock, X, User, Ban, Search, Trash2, Menu, ChevronRight, MessageCircle, Mic, Paperclip, Smile } from 'lucide-react';
-import api, { getErrorMessage } from '../../lib/api';
+import api, { getErrorMessage, ensureAuthToken } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import ChatBubble from '../../components/ChatBubble';
@@ -91,6 +91,7 @@ export default function AdminConversations() {
     (() => { try { return JSON.parse(localStorage.getItem('chatanonyme_admin') || '{}')?.token; } catch { return null; } })();
 
   const fetchConversations = useCallback(() => {
+    ensureAuthToken('admin');
     api.get('/api/admin/conversations').then(({ data }) => {
       setConversations(data.conversations || []);
       setLoading(false);
@@ -103,6 +104,7 @@ export default function AdminConversations() {
 
   useEffect(() => {
     if (!selected || !token) return;
+    ensureAuthToken('admin');
     api.get(`/api/admin/conversations/${selected.id}`).then(({ data }) => {
       setMessages(data.messages || []);
       setUnreadMap((prev) => ({ ...prev, [selected.id]: 0 }));
@@ -186,17 +188,23 @@ export default function AdminConversations() {
     return { content: JSON.stringify(payload) };
   };
 
-  const handleReply = async (e, payload) => {
+  const handleReply = async (e, payload, isRetry = false) => {
     e?.preventDefault?.();
     const body = payload !== undefined ? buildReplyBody(payload) : { content: reply.trim() };
     if (!selected || sending) return;
     if (!body.content?.trim() && !body.messageType) return;
     setSending(true);
+    ensureAuthToken('admin');
     try {
       const { data } = await api.post(`/api/admin/conversations/${selected.id}/reply`, body);
       setMessages((prev) => [...prev, data]);
       setReply('');
     } catch (err) {
+      if (!isRetry && err?.response?.status === 401) {
+        ensureAuthToken('admin');
+        await new Promise((r) => setTimeout(r, 300));
+        return handleReply(e, payload, true);
+      }
       toast.error(getErrorMessage(err, 'Erreur'));
     } finally {
       setSending(false);
@@ -220,6 +228,7 @@ export default function AdminConversations() {
   const handleClose = () => {
     setModal({ type: 'close', handler: async () => {
       try {
+        ensureAuthToken('admin');
         await api.patch(`/api/admin/conversations/${selected.id}/close`);
         setSelected((s) => ({ ...s, status: 'closed' }));
         fetchConversations();
@@ -234,6 +243,7 @@ export default function AdminConversations() {
     if (!selected?.user_id) return;
     setModal({ type: 'ban', handler: async () => {
       try {
+        ensureAuthToken('admin');
         await api.post(`/api/admin/users/${selected.user_id}/ban`);
         setSelected((s) => ({ ...s, user_status: 'banned' }));
         fetchConversations();
@@ -247,6 +257,7 @@ export default function AdminConversations() {
   const handleDeleteMessage = (msgId) => {
     setModal({ type: 'deleteMsg', msgId, handler: async () => {
       try {
+        ensureAuthToken('admin');
         await api.delete(`/api/admin/messages/${msgId}`);
         setMessages((prev) => prev.filter((m) => m.id !== msgId));
         setModal(null);
@@ -266,6 +277,7 @@ export default function AdminConversations() {
     const m = modal?.msg;
     if (!m || !modal.editContent?.trim()) return;
     try {
+      ensureAuthToken('admin');
       const { data } = await api.patch(`/api/admin/messages/${m.id}`, { content: modal.editContent.trim() });
       setMessages((prev) => prev.map((msg) => (msg.id === data.id ? data : msg)));
       setModal(null);

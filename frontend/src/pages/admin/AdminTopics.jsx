@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2, Eye, MessageCircle } from 'lucide-react';
-import api, { getErrorMessage } from '../../lib/api';
+import api, { getErrorMessage, ensureAuthToken } from '../../lib/api';
 import { decodeHtmlEntities } from '../../lib/textUtils';
 import { useToast } from '../../context/ToastContext';
 
@@ -19,6 +19,7 @@ export default function AdminTopics() {
   const [form, setForm] = useState({ title: '', content: '' });
 
   const fetchTopics = () => {
+    ensureAuthToken('admin');
     api.get('/api/admin/topics').then(({ data }) => {
       setTopics(data.topics || []);
       setLoading(false);
@@ -39,9 +40,10 @@ export default function AdminTopics() {
     setForm({ id: t.id, title: t.title, content: decodeHtmlEntities(t.content || '') });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, isRetry = false) => {
+    e?.preventDefault?.();
     if (!form.title.trim()) return;
+    ensureAuthToken('admin');
     try {
       if (modal === 'create') {
         await api.post('/api/admin/topics', { title: form.title.trim(), content: form.content.trim() });
@@ -52,14 +54,20 @@ export default function AdminTopics() {
       }
       setModal(null);
       fetchTopics();
-    } catch (e) {
-      toast.error(getErrorMessage(e, 'Erreur'));
+    } catch (err) {
+      if (!isRetry && err?.response?.status === 401) {
+        ensureAuthToken('admin');
+        await new Promise((r) => setTimeout(r, 300));
+        return handleSubmit({ preventDefault: () => {} }, true);
+      }
+      toast.error(getErrorMessage(err, 'Erreur'));
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer ce sujet ?')) return;
     try {
+      ensureAuthToken('admin');
       await api.delete(`/api/admin/topics/${id}`);
       fetchTopics();
       toast.success('Sujet supprimé');

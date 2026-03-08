@@ -62,13 +62,22 @@ const api = axios.create({
   timeout: 30000,
 });
 
-/** Force la synchronisation du token depuis localStorage (avant envoi critique) */
-export const ensureAuthToken = () => {
+/** Force la synchronisation du token depuis localStorage (avant envoi critique)
+ * @param {string} [type] - 'admin' pour routes admin, 'user' pour user, sinon auto
+ */
+export const ensureAuthToken = (type) => {
   try {
     const userStored = localStorage.getItem('chatanonyme_user');
     const adminStored = localStorage.getItem('chatanonyme_admin');
-    const p = userStored ? JSON.parse(userStored) : (adminStored ? JSON.parse(adminStored) : null);
-    const token = p?.token;
+    let token = null;
+    if (type === 'admin' && adminStored) {
+      token = JSON.parse(adminStored)?.token;
+    } else if (type === 'user' && userStored) {
+      token = JSON.parse(userStored)?.token;
+    } else {
+      const p = adminStored ? JSON.parse(adminStored) : (userStored ? JSON.parse(userStored) : null);
+      token = p?.token;
+    }
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }

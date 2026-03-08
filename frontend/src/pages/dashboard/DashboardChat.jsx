@@ -82,7 +82,7 @@ export default function DashboardChat() {
 
   useEffect(() => {
     if (!user) return;
-    ensureAuthToken();
+    ensureAuthToken('user');
     const token = api.defaults.headers.common['Authorization']?.replace('Bearer ', '') ||
       (() => { try { return JSON.parse(localStorage.getItem('chatanonyme_user') || '{}')?.token; } catch { return null; } })();
     if (!token) return;
@@ -120,7 +120,7 @@ export default function DashboardChat() {
 
   useEffect(() => {
     if (!user) return;
-    ensureAuthToken();
+    ensureAuthToken('user');
     api
       .get('/api/messages')
       .then(({ data }) => {
@@ -138,7 +138,7 @@ export default function DashboardChat() {
     if (sending) return;
     setSending(true);
     setError(null);
-    ensureAuthToken();
+    ensureAuthToken('user');
     try {
       let body = {};
       if (typeof payload === 'string') {
@@ -164,7 +164,7 @@ export default function DashboardChat() {
       }
     } catch (err) {
       if (!isRetry && err?.response?.status === 401) {
-        ensureAuthToken();
+        ensureAuthToken('user');
         await new Promise((r) => setTimeout(r, 300));
         return sendMessage(payload, true);
       }
