@@ -76,41 +76,79 @@ export function AuthProvider({ children }) {
 
   const registerUser = useCallback(async (pseudo, password, phone, email, photo) => {
     const payload = { pseudo, password, phone, email, photo };
+    const emailLocal = toValidEmailLocalPart(pseudo);
+    const supabaseEmail = `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`;
 
-    try {
-      const { data } = await api.post('/api/auth/register', payload);
-      userTokenRef.current = data.token;
-      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      localStorage.setItem(STORAGE_USER, JSON.stringify({ token: data.token, user: data.user }));
-      setUser(data.user);
-      setAdmin(null);
-      return data;
-    } catch (apiErr) {
-      if (supabase) {
-        try {
-          const emailLocal = toValidEmailLocalPart(pseudo);
-          const { data, error } = await supabase.auth.signUp({
-            email: `${emailLocal}${SUPABASE_EMAIL_DOMAIN}`,
-            password,
-            options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
-          });
-          if (error) throw error;
-          if (!data.session) throw new Error('Inscription échouée. Réessayez dans quelques minutes.');
-          const token = data.session.access_token;
-          const userData = userFromSupabaseSession(data.session);
-          userTokenRef.current = token;
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
-          setUser(userData);
-          setAdmin(null);
-          return { token, user: userData };
-        } catch (supaErr) {
-          const msg = supaErr?.message || apiErr?.response?.data?.error || apiErr?.message;
-          throw new Error(msg || 'Inscription impossible. Réessayez plus tard.');
-        }
+    const tryApi = async () => api.post('/api/auth/register', payload);
+    const trySupabase = async () => {
+      const { data, error } = await supabase.auth.signUp({
+        email: supabaseEmail,
+        password,
+        options: { data: { pseudo: pseudo.trim(), email: email?.trim() || null, photo: photo || null } },
+      });
+      if (error) throw error;
+      if (data.session) {
+        const token = data.session.access_token;
+        const userData = userFromSupabaseSession(data.session);
+        return { token, user: userData };
       }
-      throw apiErr;
+      if (data.user) {
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email: supabaseEmail,
+          password,
+        });
+        if (!signInErr && signInData?.session) {
+          const token = signInData.session.access_token;
+          const userData = userFromSupabaseSession(signInData.session);
+          return { token, user: userData };
+        }
+        throw new Error('Compte créé. Connectez-vous avec votre pseudo et mot de passe.');
+      }
+      throw new Error('Inscription échouée. Réessayez dans quelques minutes.');
+    };
+
+    const applySuccess = (token, userData) => {
+      userTokenRef.current = token;
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem(STORAGE_USER, JSON.stringify({ token, user: userData }));
+      setUser(userData);
+      setAdmin(null);
+      return { token, user: userData };
+    };
+
+    let lastErr = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data } = await tryApi();
+        return applySuccess(data.token, data.user);
+      } catch (apiErr) {
+        lastErr = apiErr;
+        if (attempt === 0 && (apiErr?.response?.status >= 500 || apiErr?.code === 'ECONNABORTED' || apiErr?.message?.includes('timeout'))) {
+          await new Promise((r) => setTimeout(r, 800));
+          continue;
+        }
+        break;
+      }
     }
+
+    if (supabase) {
+      try {
+        const result = await trySupabase();
+        return applySuccess(result.token, result.user);
+      } catch (supaErr) {
+        const msg = supaErr?.message || '';
+        if (msg.includes('already registered') || msg.includes('User already registered') || msg.includes('already exists')) {
+          throw new Error('Ce pseudo est déjà utilisé.');
+        }
+        if (msg.includes('rate limit') || msg.includes('too many')) {
+          throw new Error('Trop de tentatives. Réessayez dans quelques minutes.');
+        }
+        if (msg.includes('Compte créé')) throw supaErr;
+        throw new Error(msg || lastErr?.response?.data?.error || lastErr?.message || 'Inscription impossible. Réessayez plus tard.');
+      }
+    }
+    throw lastErr;
   }, []);
 
   const loginAdmin = useCallback(async (email, password) => {
