@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { Mic, Square, Play, Pause, Send, X } from 'lucide-react';
 import api, { getApiBaseUrl, ensureAuthToken } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { VOICE_PRESETS, applyVoicePreset } from '../../lib/voicePresets';
 
 function pickRecorderMime() {
   const candidates = [
@@ -40,6 +41,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
   const streamRef = useRef(null);
   const playObjectUrlRef = useRef(null);
   const autoStartedRef = useRef(false);
+  const [voicePreset, setVoicePreset] = useState('normal');
 
   const startRecording = async () => {
     if (typeof MediaRecorder === 'undefined') {
@@ -70,6 +72,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
         if (chunksRef.current.length > 0) {
           const type = recorder.mimeType || mimeRef.current || 'audio/webm';
           const blob = new Blob(chunksRef.current, { type });
+          setVoicePreset('normal');
           setAudioBlob(blob);
         }
       };
@@ -139,11 +142,29 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
     setSending(true);
     ensureAuthToken(authMode === 'admin' ? 'admin' : 'user');
     let payload = null;
+    let blobToSend = audioBlob;
+    if (voicePreset && voicePreset !== 'normal') {
+      try {
+        blobToSend = await applyVoicePreset(audioBlob, voicePreset);
+      } catch (err) {
+        console.warn('[VoiceRecorder] Effet vocal:', err?.message);
+        toast.error('Impossible d’appliquer l’effet. Envoi du fichier original.');
+        blobToSend = audioBlob;
+      }
+    }
     try {
       const formData = new FormData();
-      const type = audioBlob.type || 'audio/webm';
-      const ext = type.includes('webm') ? '.webm' : type.includes('mp4') || type.includes('m4a') ? '.m4a' : type.includes('ogg') ? '.ogg' : '.webm';
-      formData.append('file', audioBlob, `voice-${Date.now()}${ext}`);
+      const type = blobToSend.type || 'audio/webm';
+      const ext = type.includes('wav')
+        ? '.wav'
+        : type.includes('webm')
+          ? '.webm'
+          : type.includes('mp4') || type.includes('m4a')
+            ? '.m4a'
+            : type.includes('ogg')
+              ? '.ogg'
+              : '.webm';
+      formData.append('file', blobToSend, `voice-${Date.now()}${ext}`);
       const { data } = await api.post('/api/upload', formData, {
         timeout: 60000,
       });
@@ -153,16 +174,29 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
         type: 'voice',
         url: fullUrl,
         duration,
-        metadata: { url: fullUrl, duration },
+        metadata: {
+          url: fullUrl,
+          duration,
+          ...(voicePreset && voicePreset !== 'normal' ? { voiceEffect: voicePreset } : {}),
+        },
       };
     } catch (err) {
       console.error('[VoiceRecorder] Upload échoué, fallback base64:', err?.message);
       toast.info('Envoi direct du fichier audio…');
       const reader = new FileReader();
       payload = await new Promise((resolve, reject) => {
-        reader.onloadend = () => resolve({ type: 'voice', data: reader.result, duration });
+        reader.onloadend = () =>
+          resolve({
+            type: 'voice',
+            data: reader.result,
+            duration,
+            metadata: {
+              duration,
+              ...(voicePreset && voicePreset !== 'normal' ? { voiceEffect: voicePreset } : {}),
+            },
+          });
         reader.onerror = () => reject(new Error('Lecture échouée'));
-        reader.readAsDataURL(audioBlob);
+        reader.readAsDataURL(blobToSend);
       });
     }
     if (payload) {
@@ -171,6 +205,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
         if (result && typeof result.then === 'function') await result;
         setAudioBlob(null);
         setDuration(0);
+        setVoicePreset('normal');
       } catch (err) {
         console.error('[VoiceRecorder] Envoi échoué:', err);
         toast.error("Impossible d'envoyer le message vocal");
@@ -239,7 +274,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="flex items-center gap-4 p-4 rounded-xl bg-app-card border border-app-border"
+      className="flex flex-col gap-3 p-4 rounded-xl bg-app-card border border-app-border w-full max-w-full"
     >
       <audio
         ref={audioRef}
@@ -270,7 +305,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
         </div>
       )}
       {isRecording ? (
-        <>
+        <div className="flex items-center gap-4 flex-wrap w-full">
           <motion.button
             type="button"
             onClick={togglePause}
@@ -300,9 +335,32 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
           >
             <Square className="w-5 h-5" />
           </motion.button>
-        </>
+        </div>
       ) : audioBlob ? (
-        <>
+        <div className="w-full flex flex-col gap-3">
+          <div className="w-full flex flex-col gap-2 min-w-0">
+            <label className="text-xs font-medium text-app-muted" htmlFor="voice-preset-select">
+              Style de voix à l’envoi
+            </label>
+            <select
+              id="voice-preset-select"
+              value={voicePreset}
+              onChange={(e) => setVoicePreset(e.target.value)}
+              disabled={sending}
+              className="w-full rounded-xl bg-app-surface border border-app-border px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-purple/50"
+            >
+              {VOICE_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                  {p.hint ? ` — ${p.hint}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-app-muted leading-snug">
+              La préécoute reste votre enregistrement brut ; l’effet choisi est appliqué uniquement à l’envoi (traitement sur cet appareil).
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap w-full">
           <motion.button
             type="button"
             onClick={handlePlay}
@@ -317,6 +375,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
             onClick={() => {
               setAudioBlob(null);
               setDuration(0);
+              setVoicePreset('normal');
             }}
             disabled={sending}
             whileTap={{ scale: 0.95 }}
@@ -337,7 +396,8 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
               <Send className="w-5 h-5" />
             )}
           </motion.button>
-        </>
+          </div>
+        </div>
       ) : !requestingMic ? (
         <div className="flex items-center gap-2 flex-1 flex-wrap">
           <motion.button
