@@ -67,6 +67,11 @@ const Admin = {
     const { rows } = await pool.query('SELECT photo FROM admins LIMIT 1');
     return rows[0]?.photo || null;
   },
+
+  async deleteById(id) {
+    const { rows } = await pool.query('DELETE FROM admins WHERE id = $1 RETURNING id', [id]);
+    return rows[0] || null;
+  },
 };
 
 module.exports = Admin;

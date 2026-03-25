@@ -4,7 +4,7 @@
  * Mode sombre • Glassmorphism • Accents violet
  */
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,11 +24,12 @@ import { useAuth } from '../../context/AuthContext';
 import ThemeToggleButton from '../ThemeToggleButton';
 import { useNotifications } from '../../context/NotificationContext';
 import NotificationsDrawer from '../ui/NotificationsDrawer';
+import { usePlatformFeatures } from '../../hooks/usePlatformFeatures';
 
-const navItems = [
+const baseNavItems = [
   { to: '/dashboard', icon: Home, label: 'Accueil' },
-  { to: '/dashboard/chat', icon: MessageCircle, label: 'Messages' },
-  { to: '/dashboard/topics', icon: FileText, label: 'Forum' },
+  { to: '/dashboard/chat', icon: MessageCircle, label: 'Messages', needsPrivateChat: true },
+  { to: '/dashboard/topics', icon: FileText, label: 'Forum', needsForum: true },
   { to: '/dashboard/history', icon: History, label: 'Historique' },
   { to: '/dashboard/profile', icon: User, label: 'Profil' },
 ];
@@ -37,6 +38,26 @@ export default function UserDashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const features = usePlatformFeatures();
+
+  const navItems = useMemo(
+    () =>
+      baseNavItems.filter((item) => {
+        if (item.needsForum && features.forum === false) return false;
+        if (item.needsPrivateChat && features.privateChat === false) return false;
+        return true;
+      }),
+    [features.forum, features.privateChat]
+  );
+
+  useEffect(() => {
+    if (features.forum === false && location.pathname.startsWith('/dashboard/topics')) {
+      navigate('/dashboard', { replace: true });
+    }
+    if (features.privateChat === false && location.pathname.startsWith('/dashboard/chat')) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [features.forum, features.privateChat, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();

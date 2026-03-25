@@ -53,6 +53,9 @@ if (isVercel && !dbUrl) {
       try {
         data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
         if (!data.broadcasts) data.broadcasts = [];
+        if (!data.platform_settings || typeof data.platform_settings !== 'object') {
+          data.platform_settings = { id: 'global', features: {} };
+        }
         if (!data.users) data.users = [];
         data.users = data.users.map((u) => ({ ...u, pseudo: u.pseudo || u.anonymous_id, password_hash: u.password_hash || '', phone: u.phone || null, email: u.email || null, photo: u.photo || null }));
         data.admins = (data.admins || []).map((a) => ({ ...a, photo: a.photo || '' }));
@@ -196,6 +199,40 @@ if (isVercel && !dbUrl) {
         if (a) a.photo = $2;
         save(data);
         return { rows: a ? [a] : [] };
+      }
+      if (sql.includes('DELETE FROM admins') && sql.includes('WHERE id')) {
+        const id = $1;
+        const primaryEmail = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
+        const idx = data.admins.findIndex((a) => a.id === id);
+        if (idx < 0) return { rows: [], rowCount: 0 };
+        const victim = data.admins[idx];
+        if (String(victim.email || '').toLowerCase() === primaryEmail) {
+          return { rows: [], rowCount: 0 };
+        }
+        data.admins.splice(idx, 1);
+        save(data);
+        return { rows: [{ id }], rowCount: 1 };
+      }
+
+      if (sql.includes('SELECT features FROM platform_settings WHERE id')) {
+        const ps = data.platform_settings || { id: 'global', features: {} };
+        return { rows: [{ features: ps.features || {} }] };
+      }
+      if (sql.includes('INSERT INTO platform_settings') && sql.includes('ON CONFLICT')) {
+        data.platform_settings = data.platform_settings || { id: 'global', features: {} };
+        let features = $1;
+        if (typeof features === 'string') {
+          try {
+            features = JSON.parse(features);
+          } catch {
+            features = {};
+          }
+        }
+        data.platform_settings.id = 'global';
+        data.platform_settings.features = features && typeof features === 'object' ? features : {};
+        data.platform_settings.updated_at = new Date().toISOString();
+        save(data);
+        return { rows: [{ id: 'global', features: data.platform_settings.features }] };
       }
 
       if (sql.includes('SELECT * FROM conversations WHERE user_id')) {

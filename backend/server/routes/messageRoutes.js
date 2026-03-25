@@ -6,11 +6,14 @@ const express = require('express');
 const router = express.Router();
 const messageController = require('../controllers/messageController');
 const authUser = require('../middleware/authUser');
+const requirePlatformFeature = require('../middleware/requirePlatformFeature');
 
-router.get('/', authUser, messageController.getMyMessages);
-router.post('/', authUser, messageController.sendMessage);
-router.post('/mark-read', authUser, messageController.markAsRead);
-router.delete('/:id', authUser, messageController.deleteMessage);
-router.patch('/:id', authUser, messageController.updateMessage);
+const requirePrivateChat = requirePlatformFeature('privateChat');
+
+router.get('/', requirePrivateChat, authUser, messageController.getMyMessages);
+router.post('/', requirePrivateChat, authUser, messageController.sendMessage);
+router.post('/mark-read', requirePrivateChat, authUser, messageController.markAsRead);
+router.delete('/:id', requirePrivateChat, authUser, messageController.deleteMessage);
+router.patch('/:id', requirePrivateChat, authUser, messageController.updateMessage);
 
 module.exports = router;

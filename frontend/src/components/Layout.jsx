@@ -8,17 +8,19 @@ import { motion } from 'framer-motion';
 import { MessageCircle, FileText, User, LogOut, Home, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggleButton from './ThemeToggleButton';
+import { usePlatformFeatures } from '../hooks/usePlatformFeatures';
 
 export default function Layout() {
   const location = useLocation();
   const { user, admin, isLoggedIn, logout } = useAuth();
+  const features = usePlatformFeatures();
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
   const isHome = location.pathname === '/';
   const isDashboard = location.pathname.startsWith('/dashboard');
 
   const navItems = [
     { to: '/', icon: Home, label: 'Accueil' },
-    { to: '/topics', icon: FileText, label: 'Forum' },
+    ...(features.forum !== false ? [{ to: '/topics', icon: FileText, label: 'Forum' }] : []),
     ...(isLoggedIn ? [{ to: '/dashboard', icon: MessageCircle, label: 'Espace' }] : []),
   ];
 
@@ -73,9 +75,11 @@ export default function Layout() {
               </>
             ) : (
               <>
-                <Link to="/inscription" className="text-sm text-app-muted hover:text-app-text transition-colors">
-                  S'inscrire
-                </Link>
+                {features.registrations !== false && (
+                  <Link to="/inscription" className="text-sm text-app-muted hover:text-app-text transition-colors">
+                    S'inscrire
+                  </Link>
+                )}
                 <Link to="/admin" className="text-sm text-app-muted hover:text-app-purple transition-colors" title="Accès administrateur">
                   Admin
                 </Link>
@@ -117,15 +121,17 @@ export default function Layout() {
             <Home className="w-5 h-5" />
             <span className="text-xs">Accueil</span>
           </Link>
-          <Link
-            to="/topics"
-            className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors min-w-[64px] ${
-              isActive('/topics') ? 'text-app-purple' : 'text-app-muted'
-            }`}
-          >
-            <FileText className="w-5 h-5" />
-            <span className="text-xs">Forum</span>
-          </Link>
+          {features.forum !== false && (
+            <Link
+              to="/topics"
+              className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors min-w-[64px] ${
+                isActive('/topics') ? 'text-app-purple' : 'text-app-muted'
+              }`}
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-xs">Forum</span>
+            </Link>
+          )}
           {isLoggedIn ? (
             <Link
               to={admin ? '/admin/dashboard' : '/dashboard'}

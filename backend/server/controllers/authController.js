@@ -7,10 +7,34 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
+const PlatformSettings = require('../models/PlatformSettings');
+
+function isPrimaryAdminEmail(email) {
+  const expected = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
+  return String(email || '').toLowerCase() === expected;
+}
+
+function adminPayload(admin) {
+  if (!admin) return null;
+  return {
+    id: admin.id,
+    email: admin.email,
+    photo: admin.photo,
+    isPrimaryAdmin: isPrimaryAdminEmail(admin.email),
+  };
+}
 
 // POST /api/auth/register - Inscription (pseudo, mot de passe, phone?, email?, photo?)
 async function register(req, res, next) {
   try {
+    const features = await PlatformSettings.getMerged();
+    if (!features.registrations) {
+      return res.status(403).json({
+        error: 'Les inscriptions sont fermées.',
+        code: 'FEATURE_DISABLED',
+        feature: 'registrations',
+      });
+    }
     const { pseudo, password, phone, email, photo } = req.body || {};
     if (!pseudo || !password) {
       return res.status(400).json({ error: 'Pseudo et mot de passe requis' });
@@ -97,7 +121,7 @@ async function login(req, res, next) {
           return res.status(200).json({
             token,
             type: 'admin',
-            admin: { id: admin.id, email: admin.email, photo: admin.photo },
+            admin: adminPayload(admin),
           });
         }
       }
@@ -197,7 +221,7 @@ async function registerAdmin(req, res, next) {
     return res.status(201).json({
       token,
       type: 'admin',
-      admin: { id: admin.id, email: admin.email, photo: admin.photo },
+      admin: adminPayload(admin),
     });
   } catch (err) {
     console.error('[registerAdmin]', err?.message, err?.code);
@@ -233,7 +257,7 @@ async function adminLogin(req, res, next) {
     return res.status(200).json({
       token,
       type: 'admin',
-      admin: { id: admin.id, email: admin.email, photo: admin.photo },
+      admin: adminPayload(admin),
     });
   } catch (err) {
     if (isDbConnectionError(err)) {

@@ -3,7 +3,7 @@
  * Design system
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { io } from 'socket.io-client';
@@ -11,9 +11,16 @@ import { MessageCircle, Megaphone, FileText, ExternalLink } from 'lucide-react';
 import api from '../lib/api';
 import { decodeHtmlEntities } from '../lib/textUtils';
 import { useAuth } from '../context/AuthContext';
-import Chat from './Chat';
+import DashboardChat from './dashboard/DashboardChat';
 
 import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
+
+const DEFAULT_FEATURES = {
+  forum: true,
+  privateChat: true,
+  broadcasts: true,
+  registrations: true,
+};
 
 const tabs = [
   { id: 'chat', label: 'Chat', icon: MessageCircle },
@@ -23,22 +30,56 @@ const tabs = [
 
 export default function UserDashboard() {
   const { user } = useAuth();
-  const [config, setConfig] = useState({ whatsappNumber: '' });
+  const [config, setConfig] = useState({ whatsappNumber: '', features: DEFAULT_FEATURES });
   const [topics, setTopics] = useState([]);
   const [broadcasts, setBroadcasts] = useState([]);
   const [activeTab, setActiveTab] = useState('chat');
 
   useEffect(() => {
-    api.get('/api/config').then(({ data }) => setConfig(data)).catch(() => {});
+    api
+      .get('/api/config')
+      .then(({ data }) =>
+        setConfig({
+          whatsappNumber: data.whatsappNumber || '',
+          features: { ...DEFAULT_FEATURES, ...(data.features || {}) },
+        })
+      )
+      .catch(() => {});
   }, []);
 
+  const features = config.features || DEFAULT_FEATURES;
+
   useEffect(() => {
+    if (!features.forum) {
+      setTopics([]);
+      return;
+    }
     api.get('/api/topics', { params: { limit: 5 } }).then(({ data }) => setTopics(data.topics || [])).catch(() => {});
-  }, []);
+  }, [features.forum]);
 
   useEffect(() => {
+    if (!features.broadcasts) {
+      setBroadcasts([]);
+      return;
+    }
     api.get('/api/broadcasts', { params: { limit: 10 } }).then(({ data }) => setBroadcasts(data.broadcasts || [])).catch(() => {});
-  }, []);
+  }, [features.broadcasts]);
+
+  const visibleTabs = useMemo(
+    () =>
+      tabs.filter((t) => {
+        if (t.id === 'chat') return features.privateChat !== false;
+        if (t.id === 'broadcasts') return features.broadcasts !== false;
+        if (t.id === 'topics') return features.forum !== false;
+        return true;
+      }),
+    [features.forum, features.privateChat, features.broadcasts]
+  );
+
+  useEffect(() => {
+    if (!visibleTabs.length) return;
+    setActiveTab((prev) => (visibleTabs.some((t) => t.id === prev) ? prev : visibleTabs[0].id));
+  }, [visibleTabs]);
 
   useEffect(() => {
     if (!WS_ENABLED) return;
@@ -66,7 +107,7 @@ export default function UserDashboard() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8 flex-wrap">
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <motion.button
             key={tab.id}
             type="button"
@@ -101,7 +142,7 @@ export default function UserDashboard() {
               <ExternalLink className="w-4 h-4" /> Contacter l'admin sur WhatsApp
             </a>
           )}
-          <Chat />
+          <DashboardChat />
         </motion.div>
       )}
 

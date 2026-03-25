@@ -9,6 +9,7 @@ const Message = require('../models/Message');
 const Topic = require('../models/Topic');
 const TopicComment = require('../models/TopicComment');
 const AuditLog = require('../models/AuditLog');
+const PlatformSettings = require('../models/PlatformSettings');
 const { pool } = require('../config/database');
 
 function getClientIp(req) {
@@ -415,15 +416,104 @@ async function updatePhoto(req, res, next) {
 async function listAdmins(req, res, next) {
   try {
     const admins = await Admin.findAll();
-    return res.json({ admins });
+    const primaryEmail = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
+    const withFlags = admins.map((a) => ({
+      ...a,
+      isPrimaryAdmin: String(a.email || '').toLowerCase() === primaryEmail,
+    }));
+    return res.json({ admins: withFlags });
   } catch (err) {
     next(err);
   }
 }
 
-// POST /api/admin/admins - Créer un administrateur (par un admin connecté)
+// GET /api/admin/me - Profil admin + indicateur administrateur principal
+async function getAdminMe(req, res, next) {
+  try {
+    const admin = await Admin.findById(req.admin.id);
+    if (!admin) return res.status(404).json({ error: 'Administrateur introuvable' });
+    return res.json({
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        photo: admin.photo,
+        created_at: admin.created_at,
+      },
+      isPrimaryAdmin: isPrimaryAdmin(req),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/admin/admins/:id — Supprimer un administrateur (principal uniquement)
+async function deleteAdmin(req, res, next) {
+  try {
+    if (!isPrimaryAdmin(req)) {
+      return res.status(403).json({
+        error: 'Action réservée à l’administrateur principal.',
+      });
+    }
+    const { id } = req.params;
+    if (id === req.admin.id) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
+    }
+    const target = await Admin.findById(id);
+    if (!target) return res.status(404).json({ error: 'Administrateur introuvable' });
+    const primaryEmail = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
+    if (String(target.email || '').toLowerCase() === primaryEmail) {
+      return res.status(403).json({ error: 'L’administrateur principal ne peut pas être supprimé.' });
+    }
+    const deleted = await Admin.deleteById(id);
+    if (!deleted) return res.status(404).json({ error: 'Administrateur introuvable' });
+    await AuditLog.create(req.admin.id, 'admin.delete', 'admin', id, null, getClientIp(req));
+    return res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/platform-settings — Lecture (tous les admins)
+async function getPlatformSettings(req, res, next) {
+  try {
+    const features = await PlatformSettings.getMerged();
+    return res.json({ features, canEdit: isPrimaryAdmin(req) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /api/admin/platform-settings — Mise à jour (principal uniquement)
+async function patchPlatformSettings(req, res, next) {
+  try {
+    if (!isPrimaryAdmin(req)) {
+      return res.status(403).json({
+        error: 'Seul l’administrateur principal peut modifier ces paramètres.',
+      });
+    }
+    const body = req.body?.features || req.body || {};
+    const allowed = {};
+    for (const key of Object.keys(PlatformSettings.DEFAULT_FEATURES)) {
+      if (typeof body[key] === 'boolean') {
+        allowed[key] = body[key];
+      }
+    }
+    const features = await PlatformSettings.updatePartial(allowed);
+    await AuditLog.create(req.admin.id, 'platform.settings', 'platform', 'global', { features }, getClientIp(req));
+    return res.json({ features });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/admins - Créer un administrateur (administrateur principal uniquement)
 async function createAdmin(req, res, next) {
   try {
+    if (!isPrimaryAdmin(req)) {
+      return res.status(403).json({
+        error: 'Seul l’administrateur principal peut ajouter des administrateurs.',
+      });
+    }
     const bcrypt = require('bcryptjs');
     const { email, password } = req.body || {};
     if (!email?.trim() || !password) {
@@ -468,4 +558,8 @@ module.exports = {
   updatePhoto,
   listAdmins,
   createAdmin,
+  getAdminMe,
+  deleteAdmin,
+  getPlatformSettings,
+  patchPlatformSettings,
 };

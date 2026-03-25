@@ -74,6 +74,7 @@ export default function AdminConversations() {
   const [typing, setTyping] = useState(false);
   const toast = useToast();
   const [showVoice, setShowVoice] = useState(false);
+  const [voiceSession, setVoiceSession] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef(null);
@@ -207,7 +208,7 @@ export default function AdminConversations() {
     return { content: JSON.stringify(payload) };
   };
 
-  const handleReply = async (e, payload, isRetry = false) => {
+  const handleReply = async (e, payload, isRetry = false, options = {}) => {
     e?.preventDefault?.();
     const body = payload !== undefined ? buildReplyBody(payload) : { content: reply.trim() };
     if (!selected || sending) return;
@@ -222,9 +223,10 @@ export default function AdminConversations() {
       if (!isRetry && err?.response?.status === 401) {
         ensureAuthToken('admin');
         await new Promise((r) => setTimeout(r, 300));
-        return handleReply(e, payload, true);
+        return handleReply(e, payload, true, options);
       }
       toast.error(getErrorMessage(err, 'Erreur'));
+      if (options.throwAfterToast) throw err;
     } finally {
       setSending(false);
     }
@@ -232,7 +234,11 @@ export default function AdminConversations() {
 
   const handleVoiceSend = async (voiceData) => {
     setShowVoice(false);
-    await handleReply(null, voiceData);
+    try {
+      await handleReply(null, voiceData, false, { throwAfterToast: true });
+    } catch {
+      setShowVoice(true);
+    }
   };
 
   const handleAttachSelect = async (attachData) => {
@@ -555,7 +561,13 @@ export default function AdminConversations() {
                   className="overflow-hidden border-t border-admin-border"
                 >
                   <div className="p-4 bg-admin-surface/60">
-                    <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setShowVoice(false)} />
+                    <VoiceRecorder
+                      key={voiceSession}
+                      autoStart
+                      authMode="admin"
+                      onSend={handleVoiceSend}
+                      onCancel={() => setShowVoice(false)}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -616,7 +628,14 @@ export default function AdminConversations() {
                       </motion.button>
                       <motion.button
                         type="button"
-                        onClick={() => { setShowAttach(false); setShowEmoji(false); setShowVoice(!showVoice); }}
+                        onClick={() => {
+                          setShowAttach(false);
+                          setShowEmoji(false);
+                          setShowVoice((v) => {
+                            if (!v) setVoiceSession((s) => s + 1);
+                            return !v;
+                          });
+                        }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-admin-purple bg-admin-purple/20' : 'text-admin-muted hover:text-admin-purple hover:bg-admin-purple/10'}`}

@@ -9,6 +9,9 @@ const authAdmin = require('../middleware/authAdmin');
 
 router.use(authAdmin);
 
+router.get('/me', adminController.getAdminMe);
+router.get('/platform-settings', adminController.getPlatformSettings);
+router.patch('/platform-settings', adminController.patchPlatformSettings);
 router.get('/stats', adminController.getStats);
 router.get('/users', adminController.listUsers);
 router.delete('/users/:id', adminController.deleteUser);
@@ -29,5 +32,6 @@ router.post('/broadcast', adminController.sendBroadcast);
 router.put('/photo', adminController.updatePhoto);
 router.get('/admins', adminController.listAdmins);
 router.post('/admins', adminController.createAdmin);
+router.delete('/admins/:id', adminController.deleteAdmin);
 
 module.exports = router;

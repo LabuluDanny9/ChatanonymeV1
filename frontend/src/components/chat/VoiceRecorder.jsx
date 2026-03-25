@@ -1,5 +1,6 @@
 /**
  * Voice Recorder — Enregistrement vocal (WebM / MP4 selon navigateur)
+ * Props : onSend, onCancel, autoStart (démarre tout de suite), authMode user|admin pour l’upload
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -21,10 +22,11 @@ function pickRecorderMime() {
   return '';
 }
 
-export default function VoiceRecorder({ onSend, onCancel }) {
+export default function VoiceRecorder({ onSend, onCancel, autoStart = false, authMode = 'user' }) {
   const toast = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [requestingMic, setRequestingMic] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -36,12 +38,15 @@ export default function VoiceRecorder({ onSend, onCancel }) {
   const timerRef = useRef(null);
   const audioRef = useRef(null);
   const streamRef = useRef(null);
+  const playObjectUrlRef = useRef(null);
+  const autoStartedRef = useRef(false);
 
   const startRecording = async () => {
     if (typeof MediaRecorder === 'undefined') {
       toast.error('Enregistrement vocal non supporté par ce navigateur.');
       return;
     }
+    setRequestingMic(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -73,11 +78,13 @@ export default function VoiceRecorder({ onSend, onCancel }) {
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setDuration(0);
+      setRequestingMic(false);
 
       timerRef.current = setInterval(() => {
         setDuration((d) => d + 1);
       }, 1000);
     } catch (err) {
+      setRequestingMic(false);
       console.error('Erreur micro:', err);
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
         toast.error('Micro refusé. Autorisez l’accès au microphone dans les paramètres du navigateur.');
@@ -130,7 +137,7 @@ export default function VoiceRecorder({ onSend, onCancel }) {
       return;
     }
     setSending(true);
-    ensureAuthToken('user');
+    ensureAuthToken(authMode === 'admin' ? 'admin' : 'user');
     let payload = null;
     try {
       const formData = new FormData();
@@ -178,7 +185,15 @@ export default function VoiceRecorder({ onSend, onCancel }) {
       audioRef.current?.pause();
       setIsPlaying(false);
     } else {
+      if (playObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(playObjectUrlRef.current);
+        } catch {
+          /* ignore */
+        }
+      }
       const url = URL.createObjectURL(audioBlob);
+      playObjectUrlRef.current = url;
       if (audioRef.current) {
         audioRef.current.src = url;
         audioRef.current.play();
@@ -200,9 +215,23 @@ export default function VoiceRecorder({ onSend, onCancel }) {
   }, [isRecording, isPaused]);
 
   useEffect(() => {
+    if (!autoStart || autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    startRecording();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- démarrage unique à l’ouverture du panneau
+  }, [autoStart]);
+
+  useEffect(() => {
     return () => {
       clearInterval(timerRef.current);
       streamRef.current?.getTracks?.().forEach((t) => t.stop());
+      if (playObjectUrlRef.current) {
+        try {
+          URL.revokeObjectURL(playObjectUrlRef.current);
+        } catch {
+          /* ignore */
+        }
+      }
     };
   }, []);
 
@@ -213,7 +242,34 @@ export default function VoiceRecorder({ onSend, onCancel }) {
       exit={{ opacity: 0, y: -10 }}
       className="flex items-center gap-4 p-4 rounded-xl bg-app-card border border-app-border"
     >
-      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
+      <audio
+        ref={audioRef}
+        onEnded={() => {
+          setIsPlaying(false);
+          if (playObjectUrlRef.current) {
+            try {
+              URL.revokeObjectURL(playObjectUrlRef.current);
+            } catch {
+              /* ignore */
+            }
+            playObjectUrlRef.current = null;
+          }
+        }}
+      />
+      {requestingMic && !isRecording && !audioBlob && (
+        <div className="flex items-center gap-3 flex-1 py-2">
+          <span className="w-5 h-5 border-2 border-app-purple/30 border-t-app-purple rounded-full animate-spin shrink-0" />
+          <span className="text-sm text-app-muted">Autorisation du microphone…</span>
+          <motion.button
+            type="button"
+            onClick={onCancel}
+            whileTap={{ scale: 0.95 }}
+            className="p-2 rounded-xl text-app-muted hover:bg-app-surface ml-auto shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </motion.button>
+        </div>
+      )}
       {isRecording ? (
         <>
           <motion.button
@@ -241,6 +297,7 @@ export default function VoiceRecorder({ onSend, onCancel }) {
             onClick={stopRecording}
             whileTap={{ scale: 0.95 }}
             className="p-2 rounded-xl bg-app-danger/15 text-app-danger shrink-0"
+            title="Arrêter et préparer l’envoi"
           >
             <Square className="w-5 h-5" />
           </motion.button>
@@ -282,18 +339,18 @@ export default function VoiceRecorder({ onSend, onCancel }) {
             )}
           </motion.button>
         </>
-      ) : (
+      ) : !requestingMic ? (
         <div className="flex items-center gap-2 flex-1 flex-wrap">
           <motion.button
             type="button"
             onClick={startRecording}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-purple/20 text-app-purple font-medium"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-app-purple text-white font-medium shadow-md"
           >
             <Mic className="w-5 h-5" />
-            Enregistrer
+            Appuyer pour enregistrer
           </motion.button>
-          <span className="text-xs text-app-muted hidden sm:inline">Micro requis — message vocal jusqu’à quelques minutes</span>
+          <span className="text-xs text-app-muted hidden sm:inline">Le micro s’active au premier appui — puis envoi</span>
           <motion.button
             type="button"
             onClick={onCancel}
@@ -303,7 +360,7 @@ export default function VoiceRecorder({ onSend, onCancel }) {
             <X className="w-5 h-5" />
           </motion.button>
         </div>
-      )}
+      ) : null}
     </motion.div>
   );
 }

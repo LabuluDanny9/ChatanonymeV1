@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Send, Mic, Paperclip, Smile, Shield, Image } from 'lucide-react';
+import { Lock, Send, Mic, Paperclip, Smile, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api, { getErrorMessage, toErrorDisplay, ensureAuthToken } from '../../lib/api';
 import { io } from 'socket.io-client';
@@ -38,6 +38,7 @@ export default function DashboardChat() {
   const [typing, setTyping] = useState(false);
   const [online, setOnline] = useState(true);
   const [showVoice, setShowVoice] = useState(false);
+  const [voiceSession, setVoiceSession] = useState(0);
   const [showAttach, setShowAttach] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [editModal, setEditModal] = useState(null);
@@ -144,7 +145,7 @@ export default function DashboardChat() {
     return () => clearInterval(interval);
   }, [user, WS_ENABLED, refreshMessages]);
 
-  const sendMessage = async (payload, isRetry = false) => {
+  const sendMessage = async (payload, isRetry = false, opts = {}) => {
     if (sending) return;
     setSending(true);
     setError(null);
@@ -176,11 +177,12 @@ export default function DashboardChat() {
       if (!isRetry && err?.response?.status === 401) {
         ensureAuthToken('user');
         await new Promise((r) => setTimeout(r, 300));
-        return sendMessage(payload, true);
+        return sendMessage(payload, true, opts);
       }
       const msg = getErrorMessage(err, 'Envoi impossible');
       setError(msg);
       toast.error(msg);
+      if (opts.throwOnError) throw err;
     } finally {
       setSending(false);
     }
@@ -200,11 +202,11 @@ export default function DashboardChat() {
   };
 
   const handleVoiceSend = async (voiceData) => {
+    setShowVoice(false);
     try {
-      await sendMessage(voiceData);
-      setShowVoice(false);
+      await sendMessage(voiceData, false, { throwOnError: true });
     } catch {
-      // Garder le panneau ouvert pour réessayer
+      setShowVoice(true);
     }
   };
 
@@ -389,6 +391,9 @@ export default function DashboardChat() {
           >
             <div className="p-4 bg-app-surface/50">
               <VoiceRecorder
+                key={voiceSession}
+                autoStart
+                authMode="user"
                 onSend={handleVoiceSend}
                 onCancel={() => setShowVoice(false)}
               />
@@ -440,16 +445,6 @@ export default function DashboardChat() {
             <div className="flex items-center gap-1 shrink-0">
               <motion.button
                 type="button"
-                onClick={() => { setShowVoice(false); setShowEmoji(false); setShowAttach(!showAttach); }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-chat-primary bg-blue-50' : 'text-chat-muted hover:text-chat-primary hover:bg-blue-50/50'}`}
-                title="Envoyer une image"
-              >
-                <Image className="w-5 h-5" strokeWidth={1.5} />
-              </motion.button>
-              <motion.button
-                type="button"
                 ref={emojiButtonRef}
                 onClick={() => { setShowAttach(false); setShowVoice(false); setShowEmoji(!showEmoji); }}
                 whileHover={{ scale: 1.05 }}
@@ -465,17 +460,24 @@ export default function DashboardChat() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`p-2.5 rounded-xl transition-colors ${showAttach ? 'text-app-purple bg-app-purple/20' : 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'}`}
-                title="Fichiers (images, vidéos, documents)"
+                title="Pièces jointes (images, vidéos, fichiers)"
               >
                 <Paperclip className="w-5 h-5" strokeWidth={1.5} />
               </motion.button>
               <motion.button
                 type="button"
-                onClick={() => { setShowAttach(false); setShowEmoji(false); setShowVoice(!showVoice); }}
+                onClick={() => {
+                  setShowAttach(false);
+                  setShowEmoji(false);
+                  setShowVoice((v) => {
+                    if (!v) setVoiceSession((s) => s + 1);
+                    return !v;
+                  });
+                }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`p-2.5 rounded-xl transition-colors ${showVoice ? 'text-app-purple bg-app-purple/20' : 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'}`}
-                title="Message vocal"
+                title="Message vocal — enregistrement démarré automatiquement"
               >
                 <Mic className="w-5 h-5" strokeWidth={1.5} />
               </motion.button>

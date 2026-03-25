@@ -2,12 +2,12 @@
  * Inscription - Design system (anonymat total)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getErrorMessage } from '../lib/api';
+import api, { getErrorMessage } from '../lib/api';
 
 export default function Register() {
   const { registerUser } = useAuth();
@@ -20,6 +20,17 @@ export default function Register() {
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registrationsOpen, setRegistrationsOpen] = useState(true);
+
+  useEffect(() => {
+    api
+      .get('/api/config')
+      .then(({ data }) => {
+        const f = data?.features || {};
+        if (f.registrations === false) setRegistrationsOpen(false);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,6 +57,26 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (!registrationsOpen) {
+    return (
+      <div className="max-w-md mx-auto">
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-h2 font-bold text-[#E5E7EB] mb-4"
+        >
+          Inscriptions fermées
+        </motion.h2>
+        <p className="text-muted glass-card p-6 rounded-xl">
+          Les nouvelles inscriptions ne sont pas disponibles pour le moment. Si vous avez déjà un compte, vous pouvez vous connecter.
+        </p>
+        <p className="mt-4 text-sm text-muted text-center">
+          <Link to="/connexion" className="text-accent hover:underline">Se connecter</Link>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto">

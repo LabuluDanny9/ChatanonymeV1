@@ -1,10 +1,10 @@
 /**
- * Paramètres administrateur — Profil, sécurité, préférences
+ * Paramètres administrateur — Profil, sécurité, préférences, restrictions plateforme (principal)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, Bell, Moon, Key } from 'lucide-react';
+import { User, Lock, Bell, Moon, Key, Globe } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api, { getErrorMessage } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
@@ -19,6 +19,30 @@ export default function AdminSettings() {
     admin?.photo && !admin.photo.startsWith('http') && admin.photo.length <= 4 ? admin.photo : AVATAR_OPTIONS[0]
   );
   const [sending, setSending] = useState(false);
+  const [platform, setPlatform] = useState(null);
+  const [savingFeature, setSavingFeature] = useState(null);
+
+  useEffect(() => {
+    api
+      .get('/api/admin/platform-settings')
+      .then(({ data }) => setPlatform({ features: data.features || {}, canEdit: data.canEdit }))
+      .catch(() => setPlatform(null));
+  }, []);
+
+  const togglePlatformFeature = async (key) => {
+    if (!platform?.canEdit || !platform.features) return;
+    const nextVal = !platform.features[key];
+    setSavingFeature(key);
+    try {
+      const { data } = await api.patch('/api/admin/platform-settings', { [key]: nextVal });
+      setPlatform((p) => (p ? { ...p, features: data.features || p.features } : p));
+      toast.success('Paramètres enregistrés');
+    } catch (e) {
+      toast.error(getErrorMessage(e, 'Enregistrement impossible'));
+    } finally {
+      setSavingFeature(null);
+    }
+  };
 
   const handlePhotoSubmit = async (e) => {
     e.preventDefault();
@@ -98,6 +122,59 @@ export default function AdminSettings() {
           </motion.button>
         </form>
       </motion.div>
+
+      {/* Restrictions plateforme — visible par tous les admins, modifiable par le principal */}
+      {platform?.features && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="rounded-2xl bg-admin-card/50 border border-admin-border p-6 backdrop-blur-sm"
+        >
+          <h2 className="font-semibold text-admin-text flex items-center gap-2 mb-2">
+            <Globe className="w-5 h-5 text-admin-purple" /> Fonctionnalités de la plateforme
+          </h2>
+          <p className="text-sm text-admin-muted mb-6">
+            {platform.canEdit
+              ? 'Activez ou désactivez les fonctionnalités côté utilisateurs. Tous les administrateurs voient le même tableau de bord ; seuls ces réglages restent réservés au compte principal.'
+              : 'Seul l’administrateur principal peut modifier ces options. Vous pouvez consulter l’état actuel.'}
+          </p>
+          <div className="space-y-3">
+            {[
+              { key: 'forum', label: 'Forum (sujets et commentaires)', desc: 'Accès public aux sujets' },
+              { key: 'privateChat', label: 'Messages privés', desc: 'Chat utilisateur avec l’équipe' },
+              { key: 'broadcasts', label: 'Messages collectifs', desc: 'Annonces reçues dans l’espace utilisateur' },
+              { key: 'registrations', label: 'Inscriptions', desc: 'Création de nouveaux comptes utilisateurs' },
+            ].map(({ key, label, desc }) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-4 p-4 rounded-xl bg-admin-surface/50 border border-admin-border"
+              >
+                <div>
+                  <p className="font-medium text-admin-text">{label}</p>
+                  <p className="text-sm text-admin-muted">{desc}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!platform.canEdit || savingFeature === key}
+                  onClick={() => togglePlatformFeature(key)}
+                  className={`relative w-12 h-7 rounded-full shrink-0 transition-colors ${
+                    platform.features[key] ? 'bg-admin-purple' : 'bg-admin-border'
+                  } ${!platform.canEdit ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  aria-pressed={!!platform.features[key]}
+                >
+                  <motion.span
+                    layout
+                    className="absolute top-1 w-5 h-5 rounded-full bg-white shadow"
+                    animate={{ left: platform.features[key] ? 'calc(100% - 1.5rem)' : '0.25rem' }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                </button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Sécurité */}
       <motion.div

@@ -343,6 +343,31 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refreshAdminProfile = useCallback(async () => {
+    try {
+      const { data } = await api.get('/api/admin/me');
+      if (!data?.admin) return;
+      setAdmin((prev) => (prev ? { ...prev, ...data.admin, isPrimaryAdmin: data.isPrimaryAdmin } : null));
+      const stored = localStorage.getItem(STORAGE_ADMIN);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          localStorage.setItem(
+            STORAGE_ADMIN,
+            JSON.stringify({
+              ...parsed,
+              admin: { ...parsed.admin, ...data.admin, isPrimaryAdmin: data.isPrimaryAdmin },
+            })
+          );
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const value = {
     user,
     admin,
@@ -354,6 +379,7 @@ export function AuthProvider({ children }) {
     setAdminSession,
     logout,
     updateAdminPhoto,
+    refreshAdminProfile,
     isAdmin: !!admin,
     isLoggedIn: !!user || !!admin,
   };

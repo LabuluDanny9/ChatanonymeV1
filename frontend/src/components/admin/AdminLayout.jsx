@@ -3,7 +3,7 @@
  * Dark mode • Glassmorphism • Neon purple accents
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -76,7 +76,7 @@ function Breadcrumb() {
 }
 
 export default function AdminLayout() {
-  const { logout, admin } = useAuth();
+  const { logout, admin, refreshAdminProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -87,6 +87,10 @@ export default function AdminLayout() {
     logout();
     navigate('/admin');
   };
+
+  useEffect(() => {
+    if (admin?.id) refreshAdminProfile();
+  }, [admin?.id, refreshAdminProfile]);
 
   return (
     <div className="min-h-screen flex bg-admin-bg font-admin">

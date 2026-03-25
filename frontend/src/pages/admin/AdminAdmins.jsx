@@ -4,17 +4,22 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserPlus, Shield } from 'lucide-react';
+import { UserPlus, Shield, Trash2 } from 'lucide-react';
 import api, { getErrorMessage, ensureAuthToken } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminAdmins() {
   const toast = useToast();
+  const { admin: currentAdmin } = useAuth();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const canManageAdmins = currentAdmin?.isPrimaryAdmin === true;
 
   const fetchAdmins = () => {
     ensureAuthToken('admin');
@@ -60,6 +65,22 @@ export default function AdminAdmins() {
     }
   };
 
+  const handleDelete = async (id, email) => {
+    if (!canManageAdmins) return;
+    if (!window.confirm(`Retirer l’accès administrateur à ${email} ?`)) return;
+    setDeletingId(id);
+    ensureAuthToken('admin');
+    try {
+      await api.delete(`/api/admin/admins/${id}`);
+      toast.success('Administrateur supprimé');
+      fetchAdmins();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Suppression impossible'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const formatDate = (d) => {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('fr-FR', {
@@ -89,15 +110,17 @@ export default function AdminAdmins() {
           <h1 className="text-2xl font-bold text-admin-text">Administrateurs</h1>
           <p className="text-admin-muted mt-1">Gérez les comptes administrateurs de la plateforme</p>
         </motion.div>
-        <motion.button
-          type="button"
-          onClick={() => setModal(true)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-admin-purple text-white font-medium hover:bg-admin-purple/90 shadow-admin-glow"
-        >
-          <UserPlus className="w-5 h-5" /> Ajouter un administrateur
-        </motion.button>
+        {canManageAdmins && (
+          <motion.button
+            type="button"
+            onClick={() => setModal(true)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-admin-purple text-white font-medium hover:bg-admin-purple/90 shadow-admin-glow"
+          >
+            <UserPlus className="w-5 h-5" /> Ajouter un administrateur
+          </motion.button>
+        )}
       </div>
 
       <motion.div
@@ -112,6 +135,9 @@ export default function AdminAdmins() {
               <tr className="border-b border-admin-border">
                 <th className="text-left py-4 px-6 text-sm font-medium text-admin-muted">Email</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-admin-muted">Inscrit le</th>
+                {canManageAdmins && (
+                  <th className="text-right py-4 px-6 text-sm font-medium text-admin-muted w-24">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -124,14 +150,35 @@ export default function AdminAdmins() {
                   className="border-b border-admin-border/50 hover:bg-admin-surface/30 transition-colors"
                 >
                   <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <div className="w-10 h-10 rounded-xl bg-admin-purple/20 flex items-center justify-center shrink-0">
                         <Shield className="w-5 h-5 text-admin-purple" strokeWidth={1.5} />
                       </div>
                       <span className="font-medium text-admin-text">{a.email}</span>
+                      {a.isPrimaryAdmin && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-lg bg-admin-purple/20 text-admin-purple border border-admin-purple/30">
+                          Principal
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="py-4 px-6 text-sm text-admin-muted">{formatDate(a.created_at)}</td>
+                  {canManageAdmins && (
+                    <td className="py-4 px-6 text-right">
+                      {!a.isPrimaryAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(a.id, a.email)}
+                          disabled={deletingId === a.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-admin-danger hover:bg-admin-danger/10 border border-admin-danger/20 disabled:opacity-50"
+                          title="Supprimer cet administrateur"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {deletingId === a.id ? '…' : 'Supprimer'}
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </motion.tr>
               ))}
             </tbody>

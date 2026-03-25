@@ -7,6 +7,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePlatformFeatures } from '../hooks/usePlatformFeatures';
 import {
   Lock,
   ArrowRight,
@@ -23,6 +24,7 @@ const fadeUp = { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, 
 
 export default function Welcome() {
   const { user, admin, isLoggedIn } = useAuth();
+  const features = usePlatformFeatures();
 
   if (isLoggedIn) {
     return (
@@ -98,15 +100,17 @@ export default function Welcome() {
             transition={{ duration: 0.4, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link to="/inscription">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow hover:shadow-app-glow transition-all"
-              >
-                Créer un compte <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </Link>
+            {features.registrations !== false && (
+              <Link to="/inscription">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow hover:shadow-app-glow transition-all"
+                >
+                  Créer un compte <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            )}
             <Link to="/connexion">
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -223,16 +227,32 @@ export default function Welcome() {
           className="max-w-2xl mx-auto text-center p-12 rounded-2xl bg-gradient-to-br from-app-purple/20 to-app-blue/10 border border-app-purple/30"
         >
           <h3 className="text-2xl font-bold text-app-text mb-4">Prêt à commencer ?</h3>
-          <p className="text-app-muted mb-8">Créez votre compte en quelques secondes</p>
-          <Link to="/inscription">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow"
-            >
-              Créer un compte
-            </motion.button>
-          </Link>
+          <p className="text-app-muted mb-8">
+            {features.registrations !== false
+              ? 'Créez votre compte en quelques secondes'
+              : 'Connectez-vous pour accéder à votre espace.'}
+          </p>
+          {features.registrations !== false ? (
+            <Link to="/inscription">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow"
+              >
+                Créer un compte
+              </motion.button>
+            </Link>
+          ) : (
+            <Link to="/connexion">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-app-purple to-app-blue text-white font-semibold shadow-app-glow"
+              >
+                Se connecter
+              </motion.button>
+            </Link>
+          )}
         </motion.div>
       </section>
 
@@ -244,9 +264,11 @@ export default function Welcome() {
             <span className="font-bold text-app-text">ChatAnonyme</span>
           </div>
           <nav className="flex flex-wrap gap-6 text-sm">
-            <Link to="/topics" className="text-app-muted hover:text-app-purple transition-colors">
-              Forum
-            </Link>
+            {features.forum !== false && (
+              <Link to="/topics" className="text-app-muted hover:text-app-purple transition-colors">
+                Forum
+              </Link>
+            )}
             <a href="#" className="text-app-muted hover:text-app-purple transition-colors">
               Conditions d'utilisation
             </a>

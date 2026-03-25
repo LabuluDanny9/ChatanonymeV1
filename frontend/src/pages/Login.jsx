@@ -8,9 +8,11 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../lib/api';
+import { usePlatformFeatures } from '../hooks/usePlatformFeatures';
 
 export default function Login({ redirectTo = null }) {
   const { loginUser } = useAuth();
+  const features = usePlatformFeatures();
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -89,7 +91,7 @@ export default function Login({ redirectTo = null }) {
           {loading ? 'Connexion...' : 'Se connecter'}
         </motion.button>
       </form>
-      {!redirectTo && (
+      {!redirectTo && features.registrations !== false && (
         <p className="mt-4 text-sm text-muted text-center">
           Pas encore inscrit ? <Link to="/inscription" className="text-accent hover:underline">S'inscrire</Link>
         </p>
