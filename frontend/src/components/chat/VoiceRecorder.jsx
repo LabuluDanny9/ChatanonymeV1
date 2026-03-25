@@ -218,7 +218,6 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
     if (!autoStart || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startRecording();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- démarrage unique à l’ouverture du panneau
   }, [autoStart]);
 
   useEffect(() => {
