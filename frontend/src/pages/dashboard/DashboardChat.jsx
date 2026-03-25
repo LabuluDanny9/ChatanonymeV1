@@ -394,6 +394,8 @@ export default function DashboardChat() {
                 key={voiceSession}
                 autoStart
                 authMode="user"
+                transcribeToText
+                transcriptionLang="fr-FR"
                 onSend={handleVoiceSend}
                 onCancel={() => setShowVoice(false)}
               />

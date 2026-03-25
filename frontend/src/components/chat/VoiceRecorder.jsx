@@ -1,6 +1,7 @@
 /**
  * Voice Recorder — Enregistrement vocal (WebM / MP4 selon navigateur)
  * Props : onSend, onCancel, autoStart (démarre tout de suite), authMode user|admin pour l’upload
+ * Transcription (côté navigateur) optionnelle : transcribeToText
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -23,13 +24,21 @@ function pickRecorderMime() {
   return '';
 }
 
-export default function VoiceRecorder({ onSend, onCancel, autoStart = false, authMode = 'user' }) {
+export default function VoiceRecorder({
+  onSend,
+  onCancel,
+  autoStart = false,
+  authMode = 'user',
+  transcribeToText = false,
+  transcriptionLang = 'fr-FR',
+}) {
   const toast = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [requestingMic, setRequestingMic] = useState(false);
   const [duration, setDuration] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
+  const [transcript, setTranscript] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [waveformData, setWaveformData] = useState([]);
   const [sending, setSending] = useState(false);
@@ -42,6 +51,71 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
   const playObjectUrlRef = useRef(null);
   const autoStartedRef = useRef(false);
   const [voicePreset, setVoicePreset] = useState('normal');
+  const recognitionRef = useRef(null);
+  const transcriptRef = useRef('');
+  const finalTranscriptRef = useRef('');
+
+  const getSpeechRecognitionCtor = () => {
+    if (typeof window === 'undefined') return null;
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  };
+
+  const stopSpeechRecognition = () => {
+    try {
+      recognitionRef.current?.stop?.();
+    } catch {
+      /* ignore */
+    }
+    recognitionRef.current = null;
+  };
+
+  const startSpeechRecognition = () => {
+    const SpeechRecognition = getSpeechRecognitionCtor();
+    if (!SpeechRecognition) return false;
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop?.(); } catch {}
+      recognitionRef.current = null;
+    }
+
+    finalTranscriptRef.current = '';
+    transcriptRef.current = '';
+    setTranscript('');
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.lang = transcriptionLang;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const r = event.results[i];
+        const t = r?.[0]?.transcript || '';
+        if (r.isFinal) {
+          if (t) {
+            finalTranscriptRef.current = (finalTranscriptRef.current ? `${finalTranscriptRef.current} ` : '') + t;
+          }
+        } else {
+          interim = (interim ? `${interim} ` : '') + t;
+        }
+      }
+      const merged = `${finalTranscriptRef.current || ''}${interim ? ` ${interim}` : ''}`.trim();
+      transcriptRef.current = merged;
+      setTranscript(merged);
+    };
+
+    recognition.onerror = (e) => {
+      // On ignore l’erreur pour garder un fallback sur l’envoi du vocal
+      if (typeof e?.error === 'string') {
+        console.warn('[VoiceRecorder] SpeechRecognition error:', e.error);
+      }
+    };
+
+    recognition.start();
+    return true;
+  };
 
   const startRecording = async () => {
     if (typeof MediaRecorder === 'undefined') {
@@ -81,6 +155,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
       setDuration(0);
+      if (transcribeToText) startSpeechRecognition();
       setRequestingMic(false);
 
       timerRef.current = setInterval(() => {
@@ -106,6 +181,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
       } catch {
         /* ignore */
       }
+      stopSpeechRecognition();
       clearInterval(timerRef.current);
       setIsRecording(false);
       setIsPaused(false);
@@ -134,7 +210,37 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
   };
 
   const handleSend = async () => {
-    if (!audioBlob || sending) return;
+    if (sending) return;
+
+    if (transcribeToText) {
+      // L’UI peut être prête avant le dernier "onresult" → on laisse un petit délai.
+      let text = (transcriptRef.current || '').trim();
+      if (!text) {
+        await new Promise((r) => setTimeout(r, 350));
+        text = (transcriptRef.current || '').trim();
+      }
+      if (text) {
+        setSending(true);
+        try {
+          const result = onSend(text);
+          if (result && typeof result.then === 'function') await result;
+          setAudioBlob(null);
+          setTranscript('');
+          transcriptRef.current = '';
+          finalTranscriptRef.current = '';
+          setDuration(0);
+          setVoicePreset('normal');
+        } catch (err) {
+          console.error('[VoiceRecorder] Envoi texte (transcription) échoué:', err);
+          toast.error("Impossible d'envoyer le message");
+        } finally {
+          setSending(false);
+        }
+        return;
+      }
+    }
+
+    if (!audioBlob) return;
     if (audioBlob.size < 400) {
       toast.error('Enregistrement trop court.');
       return;
@@ -259,6 +365,7 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
     return () => {
       clearInterval(timerRef.current);
       streamRef.current?.getTracks?.().forEach((t) => t.stop());
+      stopSpeechRecognition();
       if (playObjectUrlRef.current) {
         try {
           URL.revokeObjectURL(playObjectUrlRef.current);
@@ -360,6 +467,12 @@ export default function VoiceRecorder({ onSend, onCancel, autoStart = false, aut
               La préécoute reste votre enregistrement brut ; l’effet choisi est appliqué uniquement à l’envoi (traitement sur cet appareil).
             </p>
           </div>
+          {transcribeToText && transcript.trim() && (
+            <div className="w-full rounded-xl bg-app-surface/50 border border-app-border px-3 py-2">
+              <p className="text-xs font-medium text-app-muted mb-1">Texte détecté</p>
+              <p className="text-sm text-app-text whitespace-pre-wrap break-words">{transcript}</p>
+            </div>
+          )}
           <div className="flex items-center gap-2 flex-wrap w-full">
           <motion.button
             type="button"
