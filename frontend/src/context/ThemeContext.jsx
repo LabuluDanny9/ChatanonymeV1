@@ -3,7 +3,7 @@
  * Préférence persistée en localStorage
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useLayoutEffect } from 'react';
 
 const ThemeContext = createContext(null);
 const STORAGE_KEY = 'chatanonyme_theme';
@@ -17,11 +17,14 @@ export function ThemeProvider({ children }) {
     }
   });
 
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, theme);
     } catch {}
-    document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   const setTheme = (value) => {

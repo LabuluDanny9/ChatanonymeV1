@@ -15,6 +15,11 @@ function getClientIp(req) {
   return req.ip || req.connection?.remoteAddress || null;
 }
 
+function isPrimaryAdmin(req) {
+  const expected = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
+  return String(req?.admin?.email || '').toLowerCase() === expected;
+}
+
 // GET /api/admin/stats - Statistiques dashboard
 async function getStats(req, res, next) {
   try {
@@ -66,6 +71,11 @@ async function listUsers(req, res, next) {
 // DELETE /api/admin/users/:id - Supprimer (soft) un utilisateur
 async function deleteUser(req, res, next) {
   try {
+    if (!isPrimaryAdmin(req)) {
+      return res.status(403).json({
+        error: 'Action réservée à l’administrateur principal.',
+      });
+    }
     const { id } = req.params;
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });

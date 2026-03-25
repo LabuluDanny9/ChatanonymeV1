@@ -629,7 +629,7 @@ export default function AdminConversations() {
                       <textarea
                         ref={textareaRef}
                         value={reply}
-                        onChange={(e) => setReply(e.target.value.slice(0, 2000))}
+                        onChange={(e) => setReply(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -640,7 +640,6 @@ export default function AdminConversations() {
                         rows={1}
                         disabled={sending}
                         className="w-full min-h-[44px] max-h-32 rounded-xl bg-admin-card border border-admin-border px-4 py-3 text-admin-text placeholder-admin-muted focus:outline-none focus:ring-2 focus:ring-admin-purple/50 focus:border-admin-purple transition-all duration-300 resize-none"
-                        maxLength={2000}
                       />
                     </div>
                     <motion.button
@@ -653,7 +652,7 @@ export default function AdminConversations() {
                       <Send className="w-5 h-5" />
                     </motion.button>
                   </div>
-                  <p className="text-xs text-admin-muted mt-2 ml-1">{reply.length}/2000</p>
+                  <p className="text-xs text-admin-muted mt-2 ml-1">{reply.length.toLocaleString('fr-FR')} caractères</p>
                 </form>
               </div>
             )}

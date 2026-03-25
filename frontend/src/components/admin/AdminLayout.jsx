@@ -21,8 +21,11 @@ import {
   ShieldAlert,
   Shield,
   History,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const navItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
@@ -74,6 +77,7 @@ function Breadcrumb() {
 
 export default function AdminLayout() {
   const { logout, admin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -189,6 +193,16 @@ export default function AdminLayout() {
                   </NavLink>
                 ))}
               </nav>
+              <div className="p-4 border-t border-admin-border">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-admin-muted hover:bg-admin-card/50 hover:text-admin-text transition-colors"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+                </button>
+              </div>
             </motion.aside>
           </>
         )}
@@ -216,6 +230,14 @@ export default function AdminLayout() {
               title="Recherche"
             >
               <Search className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl text-admin-muted hover:bg-admin-card/50 hover:text-admin-text transition-colors"
+              title={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <Link
               to="/admin/conversations"

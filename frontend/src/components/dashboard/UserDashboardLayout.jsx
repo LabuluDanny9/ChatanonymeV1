@@ -14,8 +14,6 @@ import {
   History,
   Bell,
   User,
-  Moon,
-  Sun,
   Menu,
   X,
   Search,
@@ -23,7 +21,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import ThemeToggleButton from '../ThemeToggleButton';
 import { useNotifications } from '../../context/NotificationContext';
 import NotificationsDrawer from '../ui/NotificationsDrawer';
 
@@ -44,7 +42,6 @@ export default function UserDashboardLayout() {
     logout();
     navigate('/connexion');
   };
-  const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -129,14 +126,6 @@ export default function UserDashboardLayout() {
             <LogOut className="w-5 h-5" strokeWidth={1.5} />
             Déconnexion
           </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-app-muted hover:bg-app-card/50 hover:text-app-text w-full transition-all"
-          >
-            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-            {theme === 'dark' ? 'Mode sombre' : 'Mode clair'}
-          </button>
         </div>
       </aside>
 
@@ -203,6 +192,7 @@ export default function UserDashboardLayout() {
             <span className="font-bold text-app-text">ChatAnonyme</span>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggleButton />
             {user && (
               <Link to="/dashboard/profile" className="w-9 h-9 rounded-xl bg-app-purple/20 flex items-center justify-center overflow-hidden shrink-0">
                 {user?.photo && user.photo.trim().length <= 4 ? (

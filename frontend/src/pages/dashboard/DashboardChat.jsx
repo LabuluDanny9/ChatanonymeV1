@@ -485,12 +485,11 @@ export default function DashboardChat() {
               <textarea
                 ref={textareaRef}
                 value={content}
-                onChange={(e) => { setContent(e.target.value.slice(0, 2000)); emitTyping(); }}
+                onChange={(e) => { setContent(e.target.value); emitTyping(); }}
                 onKeyDown={handleKeyDown}
                 placeholder="Écrivez votre message..."
                 rows={1}
                 className="w-full min-h-[44px] max-h-32 rounded-xl bg-app-card border border-app-border px-4 py-3 text-app-text placeholder-app-muted focus:outline-none focus:ring-2 focus:ring-app-purple/50 focus:border-app-purple transition-all duration-300 resize-none"
-                maxLength={2000}
                 disabled={sending}
               />
             </div>
@@ -504,7 +503,7 @@ export default function DashboardChat() {
               <Send className="w-5 h-5" />
             </motion.button>
           </div>
-          <p className="text-xs text-app-muted mt-2 ml-1">{content.length}/2000</p>
+          <p className="text-xs text-app-muted mt-2 ml-1">{content.length.toLocaleString('fr-FR')} caractères</p>
         </form>
       </div>
 

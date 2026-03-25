@@ -33,9 +33,9 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.cors.origin, credentials: true }));
 app.use(apiLimiter);
 
-// Body parsing — 15MB pour messages vocaux et pièces jointes (base64)
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// Body parsing — volumineux pour longs textes + pièces jointes / base64
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(sanitizeBody);
 
 // Fichiers uploadés (statique) — sur Vercel : /tmp car filesystem read-only

@@ -7,12 +7,14 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MessageCircle, FileText, User, LogOut, Home, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggleButton from './ThemeToggleButton';
 
 export default function Layout() {
   const location = useLocation();
   const { user, admin, isLoggedIn, logout } = useAuth();
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
   const isHome = location.pathname === '/';
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
   const navItems = [
     { to: '/', icon: Home, label: 'Accueil' },
@@ -22,13 +24,21 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-app-bg text-app-text">
+      {!isDashboard && (
+        <div className="md:hidden fixed top-0 left-0 right-0 z-[60] flex items-center justify-end px-3 py-2.5 pointer-events-none">
+          <div className="pointer-events-auto">
+            <ThemeToggleButton />
+          </div>
+        </div>
+      )}
       <header className="hidden md:block sticky top-0 z-50 bg-app-surface/80 backdrop-blur-sm border-b border-app-border">
         <div className="mx-auto px-4 py-3 flex items-center justify-between max-w-6xl">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-app-text hover:text-app-purple transition-colors">
             <img src="/logo.png" alt="ChatAnonyme" className="h-8 w-auto" />
             <span>ChatAnonyme</span>
           </Link>
-          <nav className="flex gap-6 items-center">
+          <nav className="flex gap-4 items-center">
+            <ThemeToggleButton />
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -85,7 +95,13 @@ export default function Layout() {
       </header>
 
       <main
-        className={`mx-auto ${isHome ? 'max-w-none px-0' : 'max-w-6xl px-4 py-4 sm:py-6'} ${location.pathname !== '/' ? 'pb-20 md:pb-6' : ''}`}
+        className={`mx-auto ${
+          isHome
+            ? 'max-w-none px-0 pt-12 md:pt-0'
+            : isDashboard
+              ? 'max-w-6xl px-4 py-4 sm:py-6'
+              : 'max-w-6xl px-4 py-4 sm:py-6 pt-14 md:pt-4'
+        } ${location.pathname !== '/' ? 'pb-20 md:pb-6' : ''}`}
       >
         <Outlet />
       </main>

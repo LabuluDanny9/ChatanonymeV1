@@ -203,12 +203,11 @@ export default function Chat() {
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, 2000))}
+              onChange={(e) => setContent(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Votre message..."
               rows={1}
               className="w-full min-h-[44px] max-h-32 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-corum-offwhite placeholder-corum-gray/70 focus:outline-none focus:ring-2 focus:ring-corum-turquoise/50 focus:border-corum-turquoise/50 transition-all duration-300 resize-none"
-              maxLength={2000}
               disabled={sending}
             />
           </div>
@@ -222,7 +221,7 @@ export default function Chat() {
             <Send className="w-5 h-5" />
           </motion.button>
         </div>
-        <p className="text-xs text-corum-gray/70 mt-2">{content.length}/2000</p>
+        <p className="text-xs text-corum-gray/70 mt-2">{content.length.toLocaleString('fr-FR')} caractères</p>
       </form>
     </div>
   );

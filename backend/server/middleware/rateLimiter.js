@@ -20,6 +20,15 @@ const apiLimiter = rateLimit({
   message: { error: 'Trop de requêtes, réessayez plus tard.' },
   standardHeaders: true,
   legacyHeaders: false,
+  // Chat + pièces jointes / vocaux : pas de quota global (envoi continu)
+  skip: (req) => {
+    const path = req.path || '';
+    return (
+      path.startsWith('/api/messages') ||
+      path.startsWith('/api/admin/conversations') ||
+      path.startsWith('/api/upload')
+    );
+  },
 });
 
 // Plus strict pour login admin

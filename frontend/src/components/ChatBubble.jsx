@@ -20,7 +20,14 @@ function parseMessage(msg) {
   if (!msg) return { type: 'text', data: '' };
   // Nouveau format: message_type + metadata
   const mt = msg.message_type || msg.messageType;
-  const meta = msg.metadata || {};
+  let meta = msg.metadata || {};
+  if (typeof meta === 'string') {
+    try {
+      meta = JSON.parse(meta);
+    } catch {
+      meta = {};
+    }
+  }
   if (mt === 'voice') {
     const url = meta.url || meta.data;
     return { type: 'voice', data: resolveUrl(url), duration: meta.duration };
@@ -56,10 +63,17 @@ function parseMessage(msg) {
   return { type: 'text', data: content };
 }
 
-function VoiceBubble({ data, duration, isAdmin }) {
+function VoiceBubble({ data, duration, isAdmin, variant = 'default' }) {
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(false);
   const audioRef = useRef(null);
+
+  const btnClass =
+    isAdmin
+      ? 'bg-white/20 text-white'
+      : variant === 'app'
+        ? 'bg-app-purple/25 text-app-text'
+        : 'bg-slate-200 text-slate-800';
 
   const togglePlay = () => {
     if (!audioRef.current || !data) return;
@@ -78,10 +92,14 @@ function VoiceBubble({ data, duration, isAdmin }) {
 
   const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-  if (!data) return <span className="text-xs text-chat-muted">Audio indisponible</span>;
+  if (!data) {
+    return (
+      <span className={`text-xs ${variant === 'app' ? 'text-app-muted' : 'text-chat-muted'}`}>Audio indisponible</span>
+    );
+  }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 min-w-0 max-w-full">
       <audio
         ref={audioRef}
         src={data}
@@ -95,12 +113,20 @@ function VoiceBubble({ data, duration, isAdmin }) {
         onClick={togglePlay}
         disabled={error}
         whileTap={{ scale: 0.95 }}
-        className={`p-2 rounded-full ${isAdmin ? 'bg-white/20' : 'bg-slate-200'} ${error ? 'opacity-50' : ''}`}
+        className={`p-2 rounded-full shrink-0 ${btnClass} ${error ? 'opacity-50' : ''}`}
       >
         {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
       </motion.button>
-      <span className="text-xs opacity-80">{formatTime(duration || 0)}</span>
-      {error && <span className="text-xs text-chat-danger">Erreur lecture</span>}
+      <span
+        className={`text-xs shrink-0 ${isAdmin ? 'text-white/90' : variant === 'app' ? 'text-app-muted' : 'opacity-80'}`}
+      >
+        {formatTime(duration || 0)}
+      </span>
+      {error && (
+        <span className={`text-xs shrink-0 ${variant === 'app' ? 'text-app-danger' : 'text-chat-danger'}`}>
+          Erreur lecture
+        </span>
+      )}
     </div>
   );
 }
@@ -147,7 +173,17 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
   const adminClass = variant === 'admin'
     ? 'bg-gradient-to-br from-admin-purple to-admin-blue text-white'
     : 'bg-chat-primary text-white';
-  const textClass = isAdmin ? 'text-white' : (variant === 'admin' ? 'text-admin-text' : 'text-slate-800');
+  const userBubbleClass =
+    variant === 'app'
+      ? 'bg-app-card border border-app-border text-app-text'
+      : 'bg-slate-100 border border-chat-border';
+  const textClass = isAdmin
+    ? 'text-white'
+    : variant === 'admin'
+      ? 'text-admin-text'
+      : variant === 'app'
+        ? 'text-app-text'
+        : 'text-slate-800';
   const isTextEditable = content.type === 'text' && canEdit;
   const showActions = (canDelete || isTextEditable) && (onDelete || onEdit);
 
@@ -168,21 +204,34 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
         </div>
       )}
       <div
-        className={`p-3 rounded-2xl max-w-[75%] ${
-          isAdmin ? adminClass : (variant === 'admin' ? 'bg-admin-card border border-admin-border' : 'bg-slate-100 border border-chat-border')
+        className={`p-3 rounded-2xl min-w-0 max-w-[min(85%,28rem)] ${
+          isAdmin ? adminClass : variant === 'admin' ? 'bg-admin-card border border-admin-border' : userBubbleClass
         }`}
       >
         {content.type === 'voice' && (
-          <VoiceBubble data={content.data} duration={content.duration} isAdmin={isAdmin} />
+          <VoiceBubble
+            data={content.data}
+            duration={content.duration}
+            isAdmin={isAdmin}
+            variant={variant}
+          />
         )}
         {content.type === 'image' && <ImageBubble data={content.data} />}
         {content.type === 'video' && <VideoBubble data={content.data} />}
         {content.type === 'file' && <FileBubble data={content.data} name={content.name} />}
         {content.type === 'text' && content.data && (
-          <p className={`text-sm whitespace-pre-wrap ${textClass}`}>{decodeHtmlEntities(content.data)}</p>
+          <p
+            className={`text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-[min(40vh,14rem)] overflow-y-auto overscroll-contain pr-1 ${textClass}`}
+          >
+            {decodeHtmlEntities(content.data)}
+          </p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className={`text-xs ${isAdmin ? 'text-white/90' : (variant === 'admin' ? 'text-admin-muted' : 'text-chat-muted')}`}>
+          <span
+            className={`text-xs ${
+              isAdmin ? 'text-white/90' : variant === 'admin' ? 'text-admin-muted' : variant === 'app' ? 'text-app-muted' : 'text-chat-muted'
+            }`}
+          >
             {createdAt ? new Date(createdAt).toLocaleString('fr-FR') : ''}
           </span>
           {message.edited_at && (
@@ -205,13 +254,25 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
         </div>
       )}
       {showActions && (
-        <div className="flex items-center gap-1 ml-1 opacity-0 group-hover/bubble:opacity-100 transition-opacity">
+        <div
+          className={`flex items-center gap-1 ml-1 shrink-0 transition-opacity ${
+            variant === 'app'
+              ? 'opacity-100'
+              : 'opacity-100 sm:opacity-0 sm:group-hover/bubble:opacity-100'
+          }`}
+        >
           {isTextEditable && onEdit && (
             <motion.button
               type="button"
               onClick={() => onEdit(message)}
               whileTap={{ scale: 0.9 }}
-              className={`p-1.5 rounded-lg hover:bg-white/10 ${variant === 'admin' ? 'text-admin-muted hover:text-admin-purple' : 'text-chat-muted hover:text-chat-accent'}`}
+              className={`p-1.5 rounded-lg hover:bg-white/10 ${
+                variant === 'admin'
+                  ? 'text-admin-muted hover:text-admin-purple'
+                  : variant === 'app'
+                    ? 'text-app-muted hover:text-app-purple hover:bg-app-purple/10'
+                    : 'text-chat-muted hover:text-chat-accent'
+              }`}
               title="Modifier"
             >
               <Edit2 className="w-4 h-4" strokeWidth={1.5} />
@@ -222,7 +283,13 @@ export default function ChatBubble({ message, isAdmin, isRead, createdAt, varian
               type="button"
               onClick={() => onDelete(message.id)}
               whileTap={{ scale: 0.9 }}
-              className={`p-1.5 rounded-lg ${variant === 'admin' ? 'text-admin-muted hover:text-admin-danger hover:bg-admin-danger/10' : 'text-chat-muted hover:text-chat-danger hover:bg-chat-danger/10'}`}
+              className={`p-1.5 rounded-lg ${
+                variant === 'admin'
+                  ? 'text-admin-muted hover:text-admin-danger hover:bg-admin-danger/10'
+                  : variant === 'app'
+                    ? 'text-app-muted hover:text-app-danger hover:bg-app-danger/10'
+                    : 'text-chat-muted hover:text-chat-danger hover:bg-chat-danger/10'
+              }`}
               title="Supprimer"
             >
               <Trash2 className="w-4 h-4" strokeWidth={1.5} />

@@ -19,6 +19,7 @@ module.exports = {
   admin: {
     email: process.env.ADMIN_EMAIL || 'admin@silencehub.local',
     password: process.env.ADMIN_PASSWORD || 'ChangeMe123!',
+    primaryEmail: (process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase(),
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
