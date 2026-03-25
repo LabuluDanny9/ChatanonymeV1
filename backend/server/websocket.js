@@ -41,12 +41,14 @@ function getIo(httpServer) {
   io.on('connection', (socket) => {
     if (socket.user) {
       socket.join(`user:${socket.user.id}`);
+      socket.join('forum');
       // Typing utilisateur → admin
       socket.on('typing:user', () => io.to('admin').emit('typing:user', { userId: socket.user.id }));
       socket.on('typing:user:stop', () => io.to('admin').emit('typing:user:stop', { userId: socket.user.id }));
     }
     if (socket.admin) {
       socket.join('admin');
+      socket.join('forum');
     }
 
     socket.on('topic:join', (topicId) => {

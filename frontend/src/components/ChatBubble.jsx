@@ -44,14 +44,16 @@ function parseMessage(msg) {
     const url = meta.url || meta.data;
     return { type: 'file', data: resolveUrl(url), name: meta.filename || meta.name };
   }
-  // Legacy: content JSON
+  // Legacy: content JSON (ou JSON échappé par erreur côté serveur — on retente après décodage entités)
   const content = msg.content;
   if (!content || typeof content !== 'string') return { type: 'text', data: '' };
-  try {
-    const parsed = JSON.parse(content);
+
+  const tryParsePayload = (raw) => {
+    const parsed = JSON.parse(raw);
     if (parsed.type && parsed.data) {
       const d = parsed.data;
-      const url = typeof d === 'string' && (d.startsWith('http') || d.startsWith('/') || d.startsWith('data:')) ? d : resolveUrl(d);
+      const url =
+        typeof d === 'string' && (d.startsWith('http') || d.startsWith('/') || d.startsWith('data:')) ? d : resolveUrl(d);
       return {
         type: parsed.type,
         data: url,
@@ -59,7 +61,27 @@ function parseMessage(msg) {
         name: parsed.name,
       };
     }
-  } catch {}
+    return null;
+  };
+
+  try {
+    const result = tryParsePayload(content);
+    if (result) return result;
+  } catch {
+    try {
+      const decoded = decodeHtmlEntities(content);
+      const result = tryParsePayload(decoded);
+      if (result) return result;
+    } catch {
+      /* affichage texte */
+    }
+  }
+
+  // Évite d’afficher des Mo de base64 si le parse a échoué
+  if (content.length > 2000 && /^(data:audio|data:video|\{)/.test(content.trim())) {
+    return { type: 'text', data: '[Pièce jointe ou message vocal — impossible à afficher. Supprimez ce message et renvoyez.]' };
+  }
+
   return { type: 'text', data: content };
 }
 

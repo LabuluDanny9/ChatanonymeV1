@@ -307,6 +307,16 @@ async function createTopic(req, res, next) {
     }
     const topic = await Topic.create(String(title).trim(), String(content || '').trim());
     await AuditLog.create(req.admin.id, 'topic.create', 'topic', topic.id, null, getClientIp(req));
+    const io = req.app.get('io');
+    if (io) {
+      io.to('forum').emit('notification:forum', {
+        kind: 'topic',
+        topicId: topic.id,
+        topicTitle: topic.title,
+        excerpt: String(content || '').trim().slice(0, 120),
+        skipForPublisher: true,
+      });
+    }
     return res.status(201).json(topic);
   } catch (err) {
     next(err);

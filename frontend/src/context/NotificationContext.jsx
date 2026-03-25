@@ -1,19 +1,35 @@
 /**
- * Notification Context — Temps réel
- * Nouveau message admin, nouveau sujet, réponse admin
+ * Notification Context — Temps réel + persistance légère (localStorage)
  */
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { io } from 'socket.io-client';
-import api from '../lib/api';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-const WS_PATH = process.env.REACT_APP_WS_PATH || '/ws';
+const STORAGE_KEY = 'chatanonyme_notifications_v1';
 
 const NotificationContext = createContext(null);
 
+function loadStored() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(0, 50);
+  } catch {
+    return [];
+  }
+}
+
 export function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState(() => loadStored());
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.slice(0, 50)));
+    } catch {
+      /* quota */
+    }
+  }, [notifications]);
 
   const addNotification = useCallback((notif) => {
     const item = { id: Date.now() + Math.random(), ...notif, read: false, createdAt: new Date().toISOString() };

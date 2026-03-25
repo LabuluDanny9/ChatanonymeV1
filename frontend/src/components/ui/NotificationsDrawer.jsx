@@ -1,19 +1,22 @@
 /**
  * Notifications Drawer — Style Discord/Reddit
- * Slide-in, types: message, topic, reply
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, MessageCircle, FileText, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, MessageCircle, FileText, Megaphone, X } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
 
 const typeIcons = {
   message: MessageCircle,
   topic: FileText,
+  forum: FileText,
+  broadcast: Megaphone,
   reply: MessageCircle,
 };
 
 export default function NotificationsDrawer({ open, onClose }) {
+  const navigate = useNavigate();
   const { notifications, markAsRead, markAllRead, unreadCount } = useNotifications();
 
   return (
@@ -78,7 +81,13 @@ export default function NotificationsDrawer({ open, onClose }) {
                       className={`p-4 rounded-xl border cursor-pointer transition-colors ${
                         n.read ? 'bg-app-card/30 border-app-border' : 'bg-app-purple/10 border-app-purple/30'
                       }`}
-                      onClick={() => markAsRead(n.id)}
+                      onClick={() => {
+                        markAsRead(n.id);
+                        if (n.linkTo) {
+                          navigate(n.linkTo);
+                          onClose();
+                        }
+                      }}
                     >
                       <div className="flex gap-3">
                         <div className="w-10 h-10 rounded-xl bg-app-purple/20 flex items-center justify-center shrink-0">

@@ -67,6 +67,17 @@ async function create(req, res, next) {
     const io = req.app.get('io');
     if (io) {
       io.to(`topic:${topicId}`).emit('comment:new', comment);
+      const excerpt = String(content).trim().slice(0, 160);
+      const aid = comment.author_id ?? comment.authorId;
+      io.to('forum').emit('notification:forum', {
+        kind: 'comment',
+        topicId,
+        topicTitle: topic.title,
+        commentId: comment.id,
+        excerpt,
+        authorName: comment.author_name || authorName,
+        authorId: aid && aid !== 'anonymous' ? aid : null,
+      });
     }
 
     return res.status(201).json(comment);
