@@ -17,6 +17,7 @@ import CommentInput from '../components/forum/CommentInput';
 import { getErrorMessage } from '../lib/api';
 import { decodeHtmlEntities } from '../lib/textUtils';
 import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfig';
+import { parseTopicTheme } from '../lib/topicTheme';
 
 function buildCommentTree(comments) {
   const byId = new Map();
@@ -199,6 +200,8 @@ export default function TopicView() {
     );
   }
 
+  const topicTheme = parseTopicTheme(topic?.content);
+
   return (
     <div className="min-h-screen bg-app-bg text-app-text">
       <div className="bg-app-surface/80 backdrop-blur-sm border-b border-app-border sticky top-0 z-10">
@@ -240,8 +243,20 @@ export default function TopicView() {
 
           <div className="px-4 pb-2">
             <h1 className="text-xl font-semibold text-app-text mb-2">{topic.title}</h1>
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              {topicTheme.category && topicTheme.category !== 'Sans theme' ? (
+                <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-app-purple/20 text-app-purple">
+                  {topicTheme.category}
+                </span>
+              ) : null}
+              {topicTheme.subcategory ? (
+                <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-app-card border border-app-border text-app-muted">
+                  {topicTheme.subcategory}
+                </span>
+              ) : null}
+            </div>
             <div className="text-app-text text-[15px] leading-relaxed whitespace-pre-wrap">
-              {decodeHtmlEntities(topic.content)}
+              {decodeHtmlEntities(topicTheme.contentWithoutHeader)}
             </div>
           </div>
 

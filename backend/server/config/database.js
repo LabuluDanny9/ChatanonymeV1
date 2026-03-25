@@ -12,7 +12,14 @@ const dbUrl = process.env.DATABASE_URL || '';
 // Supabase/PostgreSQL quand DATABASE_URL est défini. JSON en fallback si vide ou json:
 // Sur Vercel (serverless), le mode JSON échoue (filesystem read-only) → exiger DATABASE_URL
 const isVercel = !!process.env.VERCEL;
-const useJson = !isVercel && (!dbUrl || dbUrl.startsWith('json:'));
+// Note: pour que la plateforme reste opérationnelle en dev même si Supabase est mal configuré
+// (ex: "Tenant or user not found"), on utilise le store JSON par défaut en environnement non-produit.
+// Pour forcer PostgreSQL/Supabase, définis `DB_FORCE_POSTGRES=true`.
+const useJson = !isVercel && process.env.DB_FORCE_POSTGRES !== 'true' && (
+  !dbUrl ||
+  dbUrl.startsWith('json:') ||
+  (process.env.NODE_ENV || 'development') !== 'production'
+);
 
 let db;
 
@@ -54,10 +61,26 @@ if (isVercel && !dbUrl) {
       }
     }
     if (!data.topics) data.topics = [];
-    if (data.topics.length < 3) {
-      const existingTitles = data.topics.map((t) => t.title);
-      const toAdd = seedTopics.filter((t) => !existingTitles.includes(t.title));
-      toAdd.forEach((t) => data.topics.push({ id: require('crypto').randomUUID(), ...t, published_at: new Date().toISOString(), created_at: new Date().toISOString() }));
+    // Normalise les sujets existants : si le store JSON contient déjà 3 sujets mais sans header thème,
+    // on remplace par la version incluse dans seedTopics (pour l’UI thématique).
+    const seedByTitle = new Map(seedTopics.map((t) => [t.title, t]));
+    data.topics = (data.topics || []).map((t) => {
+      const content = t?.content;
+      const hasThemeHeader = typeof content === 'string' && content.trim().startsWith('#theme:');
+      if (hasThemeHeader) return t;
+      const seed = seedByTitle.get(t?.title);
+      if (seed?.content) return { ...t, content: seed.content };
+      return t;
+    });
+    const existingTitles = data.topics.map((t) => t.title);
+    const toAdd = seedTopics.filter((t) => !existingTitles.includes(t.title));
+    if (toAdd.length > 0) {
+      toAdd.forEach((t) => data.topics.push({
+        id: require('crypto').randomUUID(),
+        ...t,
+        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      }));
       fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
     }
     if (!data.broadcasts) {

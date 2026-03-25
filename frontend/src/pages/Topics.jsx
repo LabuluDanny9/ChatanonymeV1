@@ -9,6 +9,8 @@ import { motion } from 'framer-motion';
 import { FileText, Search, MessageCircle, ThumbsUp, Globe } from 'lucide-react';
 import api from '../lib/api';
 import { decodeHtmlEntities } from '../lib/textUtils';
+import { parseTopicTheme } from '../lib/topicTheme';
+import { THEME_CATALOG } from '../lib/themeCatalog';
 
 const FILTERS = [
   { id: 'recent', label: 'Récents' },
@@ -22,6 +24,8 @@ export default function Topics() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('recent');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedSubtheme, setSelectedSubtheme] = useState('ALL');
 
   useEffect(() => {
     api
@@ -34,15 +38,49 @@ export default function Topics() {
       .finally(() => setLoading(false));
   }, []);
 
+  const enrichedTopics = useMemo(() => {
+    return (topics || []).map((t) => {
+      const { category, subcategory, contentWithoutHeader } = parseTopicTheme(t?.content);
+      return { ...t, themeCategory: category, themeSubcategory: subcategory, contentClean: contentWithoutHeader };
+    });
+  }, [topics]);
+
+  const availableThemes = useMemo(() => {
+    const countsByCategory = new Map();
+    const countsBySub = new Map();
+
+    for (const t of enrichedTopics) {
+      const cat = t.themeCategory || 'Sans theme';
+      const sub = t.themeSubcategory || 'Sans sous-theme';
+      countsByCategory.set(cat, (countsByCategory.get(cat) || 0) + 1);
+      countsBySub.set(`${cat}__${sub}`, (countsBySub.get(`${cat}__${sub}`) || 0) + 1);
+    }
+
+    const hasSansTheme = countsByCategory.has('Sans theme');
+    const catalog = [...THEME_CATALOG];
+    if (hasSansTheme) {
+      catalog.push({ id: 'Sans theme', label: 'Sans theme', subthemes: [] });
+    }
+
+    return { countsByCategory, countsBySub, catalog };
+  }, [enrichedTopics]);
+
   const filteredTopics = useMemo(() => {
     let list = [...topics];
+    list = [...enrichedTopics];
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
         (t) =>
           (t.title || '').toLowerCase().includes(q) ||
-          (t.content || '').toLowerCase().includes(q)
+          (t.contentClean || '').toLowerCase().includes(q)
       );
+    }
+    if (selectedCategory !== 'ALL') {
+      list = list.filter((t) => (t.themeCategory || 'Sans theme') === selectedCategory);
+    }
+    if (selectedSubtheme !== 'ALL') {
+      list = list.filter((t) => (t.themeSubcategory || '') === selectedSubtheme);
     }
     if (filter === 'discussed' || filter === 'popular') {
       list.sort((a, b) => (b.comments_count || 0) - (a.comments_count || 0));
@@ -50,7 +88,7 @@ export default function Topics() {
       list.sort((a, b) => new Date(b.published_at) - new Date(a.published_at));
     }
     return list;
-  }, [topics, search, filter]);
+  }, [enrichedTopics, search, filter, selectedCategory, selectedSubtheme]);
 
   if (loading) {
     return (
@@ -89,7 +127,7 @@ export default function Topics() {
               className="w-full pl-12 pr-4 py-2.5 rounded-xl bg-app-card border border-app-border text-app-text placeholder-app-muted focus:outline-none focus:ring-2 focus:ring-app-purple/50 focus:border-app-purple text-[15px]"
             />
           </div>
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 flex-wrap">
             {FILTERS.map((f) => (
               <button
                 key={f.id}
@@ -104,6 +142,89 @@ export default function Topics() {
                 {f.label}
               </button>
             ))}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-app-muted">Thématiques</span>
+              <button
+                type="button"
+                className={`text-[13px] px-3 py-1 rounded-full border transition-colors ${
+                  selectedCategory === 'ALL' ? 'bg-app-purple text-white border-app-purple/20' : 'bg-app-card border-app-border text-app-muted hover:text-app-text'
+                }`}
+                onClick={() => {
+                  setSelectedCategory('ALL');
+                  setSelectedSubtheme('ALL');
+                }}
+              >
+                Tout
+              </button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {availableThemes.catalog.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(c.id);
+                    setSelectedSubtheme('ALL');
+                  }}
+                  className={`px-3 py-1 rounded-full text-[13px] border transition-colors ${
+                    selectedCategory === c.id
+                      ? 'bg-app-purple text-white border-app-purple/20'
+                      : 'bg-app-card border-app-border text-app-muted hover:text-app-text hover:border-app-purple/30'
+                  }`}
+                >
+                  {c.label}
+                  {availableThemes.countsByCategory.get(c.id) ? (
+                    <span className="ml-2 text-app-muted/80">({availableThemes.countsByCategory.get(c.id)})</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+
+            {selectedCategory !== 'ALL' && selectedCategory !== 'Sans theme' && (
+              <div>
+                <div className="text-[13px] text-app-muted mb-2">
+                  Sous-thèmes
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {(() => {
+                    const cat = THEME_CATALOG.find((x) => x.id === selectedCategory);
+                    const subs = cat?.subthemes || [];
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSubtheme('ALL')}
+                          className={`px-3 py-1 rounded-full text-[13px] border transition-colors ${
+                            selectedSubtheme === 'ALL'
+                              ? 'bg-app-purple text-white border-app-purple/20'
+                              : 'bg-app-card border-app-border text-app-muted hover:text-app-text hover:border-app-purple/30'
+                          }`}
+                        >
+                          Tous
+                        </button>
+                        {subs.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setSelectedSubtheme(s)}
+                            className={`px-3 py-1 rounded-full text-[13px] border transition-colors ${
+                              selectedSubtheme === s
+                                ? 'bg-app-purple text-white border-app-purple/20'
+                                : 'bg-app-card border-app-border text-app-muted hover:text-app-text hover:border-app-purple/30'
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -154,9 +275,23 @@ export default function Topics() {
                         {t.title}
                       </h2>
                       <p className="text-app-muted text-[15px] line-clamp-2">
-                        {decodeHtmlEntities(t.content || '').slice(0, 150)}
-                        {(t.content?.length || 0) > 150 ? '...' : ''}
+                        {decodeHtmlEntities(t.contentClean || '').slice(0, 150)}
+                        {(t.contentClean?.length || 0) > 150 ? '...' : ''}
                       </p>
+
+                      <div className="flex items-center gap-2 mt-3">
+                        {t.themeCategory ? (
+                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-app-purple/20 text-app-purple">
+                            {t.themeCategory}
+                          </span>
+                        ) : null}
+                        {t.themeSubcategory ? (
+                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-app-card border border-app-border text-app-muted">
+                            {t.themeSubcategory}
+                          </span>
+                        ) : null}
+                      </div>
+
                       <div className="flex items-center gap-4 mt-3 text-app-muted text-[13px]">
                         <span className="flex items-center gap-1">
                           <MessageCircle className="w-4 h-4" />

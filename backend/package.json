@@ -16,7 +16,8 @@
     "create-admin": "node server/scripts/createAdmin.js",
     "clear-admins": "node server/scripts/clear-admins.js",
     "clear-admins:json": "node server/scripts/clear-admins.js --json",
-    "clear-admins-and-create": "node server/scripts/clear-admins-and-create.js"
+    "clear-admins-and-create": "node server/scripts/clear-admins-and-create.js",
+    "reset-admins-one": "node server/scripts/reset-admins-one.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

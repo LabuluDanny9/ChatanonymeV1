@@ -10,6 +10,7 @@ import { FileText, ArrowRight, Search, MessageCircle } from 'lucide-react';
 import api from '../../lib/api';
 import { decodeHtmlEntities } from '../../lib/textUtils';
 import { SkeletonCard } from '../../components/ui/Skeleton';
+import { parseTopicTheme } from '../../lib/topicTheme';
 
 export default function DashboardTopics() {
   const navigate = useNavigate();
@@ -120,8 +121,15 @@ export default function DashboardTopics() {
                     {t.title}
                   </h3>
                   <p className="text-sm text-app-muted line-clamp-2">
-                    {decodeHtmlEntities(t.content || '').slice(0, 120)}
-                    {(t.content?.length || 0) > 120 ? '...' : ''}
+                    {(() => {
+                      const theme = parseTopicTheme(t?.content);
+                      return (
+                        <>
+                          {decodeHtmlEntities(theme.contentWithoutHeader || '').slice(0, 120)}
+                          {(theme.contentWithoutHeader?.length || 0) > 120 ? '...' : ''}
+                        </>
+                      );
+                    })()}
                   </p>
                   <div className="flex items-center gap-2 mt-4 text-xs text-app-muted">
                     <MessageCircle className="w-4 h-4" />
