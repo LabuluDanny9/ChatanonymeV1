@@ -15,6 +15,7 @@ router.delete('/users/:id', adminController.deleteUser);
 router.post('/users/:id/ban', adminController.banUser);
 router.get('/conversations', adminController.listConversations);
 router.get('/conversations/:id', adminController.getConversation);
+router.get('/messages/history', adminController.listMessageHistory);
 router.post('/conversations/:id/reply', adminController.replyToConversation);
 router.patch('/conversations/:id/close', adminController.closeConversation);
 router.delete('/messages/:id', adminController.deleteMessage);

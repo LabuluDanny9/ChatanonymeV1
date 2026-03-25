@@ -22,6 +22,7 @@ import AdminTopics from './pages/admin/AdminTopics';
 import AdminReports from './pages/admin/AdminReports';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminAdmins from './pages/admin/AdminAdmins';
+import AdminMessageHistory from './pages/admin/AdminMessageHistory';
 import Layout from './components/Layout';
 import AdminLayout from './components/admin/AdminLayout';
 import UserDashboardLayout from './components/dashboard/UserDashboardLayout';
@@ -73,6 +74,7 @@ function AppRoutes() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="conversations" element={<AdminConversations />} />
+          <Route path="messages-history" element={<AdminMessageHistory />} />
           <Route path="topics" element={<AdminTopics />} />
           <Route path="topics/:id" element={<TopicView />} />
           <Route path="admins" element={<AdminAdmins />} />

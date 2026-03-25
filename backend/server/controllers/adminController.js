@@ -115,6 +115,65 @@ async function getConversation(req, res, next) {
   }
 }
 
+// GET /api/admin/messages/history - Historique global (conversation + utilisateur)
+// Compatible PostgreSQL ET mode JSON (fallback) en s'appuyant sur les modèles existants.
+async function listMessageHistory(req, res, next) {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 200, 1000);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const q = String(req.query.q || '').trim().toLowerCase();
+    const senderType = String(req.query.senderType || '').trim().toLowerCase();
+
+    const { conversations } = await Conversation.findAllForAdmin({ limit: 1000, offset: 0 });
+    const allRows = [];
+
+    for (const conv of conversations || []) {
+      // includeDeleted=true pour que l'admin ait une vision d'historique complète
+      const messages = await Message.findByConversationId(conv.id, true);
+      for (const m of messages || []) {
+        allRows.push({
+          id: m.id,
+          conversation_id: conv.id,
+          user_id: conv.user_id,
+          pseudo: conv.pseudo || null,
+          user_status: conv.user_status || null,
+          sender_type: m.sender_type,
+          sender_id: m.sender_id,
+          content: m.content || '',
+          message_type: m.message_type || 'text',
+          metadata: m.metadata || {},
+          topic_id: m.topic_id || null,
+          is_read: !!m.is_read,
+          deleted_at: m.deleted_at || null,
+          edited_at: m.edited_at || null,
+          created_at: m.created_at,
+        });
+      }
+    }
+
+    let filtered = allRows;
+
+    if (senderType === 'user' || senderType === 'admin') {
+      filtered = filtered.filter((r) => r.sender_type === senderType);
+    }
+
+    if (q) {
+      filtered = filtered.filter((r) => {
+        const hay = `${r.pseudo || ''} ${r.content || ''} ${r.message_type || ''}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const total = filtered.length;
+    const rows = filtered.slice(offset, offset + limit);
+
+    return res.json({ messages: rows, total, limit, offset });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // Normalisation contenu (texte, voice, image, fichier) — même logique que messageController
 function normalizeContent(body) {
   const { content, messageType, metadata, topicId } = body || {};
@@ -375,6 +434,7 @@ module.exports = {
   banUser,
   listConversations,
   getConversation,
+  listMessageHistory,
   replyToConversation,
   closeConversation,
   deleteMessage,

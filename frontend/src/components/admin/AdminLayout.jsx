@@ -20,6 +20,7 @@ import {
   Settings,
   ShieldAlert,
   Shield,
+  History,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
   { to: '/admin/users', icon: Users, label: 'Utilisateurs' },
   { to: '/admin/conversations', icon: MessageCircle, label: 'Messages' },
+  { to: '/admin/messages-history', icon: History, label: 'Historique global' },
   { to: '/admin/topics', icon: FileText, label: 'Forum' },
   { to: '/admin/admins', icon: Shield, label: 'Administrateurs' },
   { to: '/admin/reports', icon: ShieldAlert, label: 'Signalements' },
@@ -41,6 +43,7 @@ function Breadcrumb() {
     dashboard: 'Tableau de bord',
     users: 'Utilisateurs',
     conversations: 'Messages',
+    'messages-history': 'Historique global',
     topics: 'Forum',
     admins: 'Administrateurs',
     reports: 'Signalements',
