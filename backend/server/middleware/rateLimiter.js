@@ -6,9 +6,17 @@
 const rateLimit = require('express-rate-limit');
 const config = require('../config');
 
+const isProd = (process.env.NODE_ENV || 'development') === 'production';
+
+// En dev, le polling (chat/admin) dépasse facilement 100 req/15 min.
+// On augmente donc le plafond pour éviter de bloquer toute la plateforme pendant les tests.
+const effectiveMax = isProd
+  ? config.rateLimit.max
+  : Math.max(config.rateLimit.max || 100, 2000);
+
 const apiLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
+  max: effectiveMax,
   message: { error: 'Trop de requêtes, réessayez plus tard.' },
   standardHeaders: true,
   legacyHeaders: false,
