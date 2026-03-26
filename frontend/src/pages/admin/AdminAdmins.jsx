@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserPlus, Shield, Trash2 } from 'lucide-react';
+import { UserPlus, Shield, Trash2, ListChecks } from 'lucide-react';
 import api, { getErrorMessage, ensureAuthToken } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -18,6 +18,9 @@ export default function AdminAdmins() {
   const [form, setForm] = useState({ email: '', password: '', confirmPassword: '' });
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [themes, setThemes] = useState([]);
+  const [assignModal, setAssignModal] = useState({ open: false, admin: null, selected: [] });
+  const [assigning, setAssigning] = useState(false);
 
   const canManageAdmins = currentAdmin?.isPrimaryAdmin === true;
 
@@ -31,6 +34,8 @@ export default function AdminAdmins() {
 
   useEffect(() => {
     fetchAdmins();
+    ensureAuthToken('admin');
+    api.get('/api/admin/themes').then(({ data }) => setThemes(data.themes || [])).catch(() => setThemes([]));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -78,6 +83,40 @@ export default function AdminAdmins() {
       toast.error(getErrorMessage(err, 'Suppression impossible'));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openAssignModal = (admin) => {
+    setAssignModal({
+      open: true,
+      admin,
+      selected: Array.isArray(admin?.assignedThemes) ? admin.assignedThemes : [],
+    });
+  };
+
+  const toggleTheme = (key) => {
+    setAssignModal((prev) => {
+      const has = prev.selected.includes(key);
+      return {
+        ...prev,
+        selected: has ? prev.selected.filter((x) => x !== key) : [...prev.selected, key],
+      };
+    });
+  };
+
+  const saveAssignments = async () => {
+    if (!assignModal.admin?.id) return;
+    setAssigning(true);
+    ensureAuthToken('admin');
+    try {
+      await api.put(`/api/admin/admins/${assignModal.admin.id}/assignments`, { themes: assignModal.selected });
+      toast.success('Assignations enregistrées');
+      setAssignModal({ open: false, admin: null, selected: [] });
+      fetchAdmins();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Erreur lors de la sauvegarde'));
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -135,8 +174,9 @@ export default function AdminAdmins() {
               <tr className="border-b border-admin-border">
                 <th className="text-left py-4 px-6 text-sm font-medium text-admin-muted">Email</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-admin-muted">Inscrit le</th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-admin-muted">Thématiques</th>
                 {canManageAdmins && (
-                  <th className="text-right py-4 px-6 text-sm font-medium text-admin-muted w-24">Actions</th>
+                  <th className="text-right py-4 px-6 text-sm font-medium text-admin-muted w-40">Actions</th>
                 )}
               </tr>
             </thead>
@@ -163,20 +203,46 @@ export default function AdminAdmins() {
                     </div>
                   </td>
                   <td className="py-4 px-6 text-sm text-admin-muted">{formatDate(a.created_at)}</td>
+                  <td className="py-4 px-6">
+                    <div className="flex flex-wrap gap-1">
+                      {(a.assignedThemes || []).length ? (
+                        (a.assignedThemes || []).map((k) => (
+                          <span key={`${a.id}-${k}`} className="text-xs px-2 py-0.5 rounded-lg border border-admin-border text-admin-muted">
+                            {k}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-admin-muted">Aucune</span>
+                      )}
+                    </div>
+                  </td>
                   {canManageAdmins && (
                     <td className="py-4 px-6 text-right">
-                      {!a.isPrimaryAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(a.id, a.email)}
-                          disabled={deletingId === a.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-admin-danger hover:bg-admin-danger/10 border border-admin-danger/20 disabled:opacity-50"
-                          title="Supprimer cet administrateur"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          {deletingId === a.id ? '…' : 'Supprimer'}
-                        </button>
-                      )}
+                      <div className="inline-flex items-center gap-2">
+                        {!a.isPrimaryAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => openAssignModal(a)}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-admin-muted hover:bg-admin-surface border border-admin-border"
+                            title="Assigner des thématiques"
+                          >
+                            <ListChecks className="w-4 h-4" />
+                            Affecter
+                          </button>
+                        )}
+                        {!a.isPrimaryAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(a.id, a.email)}
+                            disabled={deletingId === a.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-admin-danger hover:bg-admin-danger/10 border border-admin-danger/20 disabled:opacity-50"
+                            title="Supprimer cet administrateur"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            {deletingId === a.id ? '…' : 'Supprimer'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </motion.tr>
@@ -259,6 +325,58 @@ export default function AdminAdmins() {
                 </motion.button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal assignation des thématiques */}
+      {assignModal.open && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-lg rounded-2xl bg-admin-card border border-admin-border shadow-admin-glow p-6"
+          >
+            <h2 className="text-xl font-bold text-admin-text mb-2">Affecter des thématiques</h2>
+            <p className="text-sm text-admin-muted mb-5">
+              {assignModal.admin?.email}
+            </p>
+            <div className="max-h-72 overflow-auto grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
+              {(themes || []).map((k) => {
+                const selected = assignModal.selected.includes(k);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => toggleTheme(k)}
+                    className={`text-left px-3 py-2 rounded-lg border text-sm ${
+                      selected
+                        ? 'bg-admin-purple/20 border-admin-purple text-admin-purple'
+                        : 'bg-admin-surface border-admin-border text-admin-muted'
+                    }`}
+                  >
+                    {k}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setAssignModal({ open: false, admin: null, selected: [] })}
+                className="flex-1 py-3 rounded-xl bg-admin-surface text-admin-muted hover:bg-admin-border font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={assigning}
+                onClick={saveAssignments}
+                className="flex-1 py-3 rounded-xl bg-admin-purple text-white font-medium hover:bg-admin-purple/90 disabled:opacity-50"
+              >
+                {assigning ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
           </motion.div>
         </div>
       )}

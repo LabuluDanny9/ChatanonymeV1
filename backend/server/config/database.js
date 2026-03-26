@@ -47,7 +47,7 @@ if (isVercel && !dbUrl) {
 
   const seedTopics = require('../scripts/seedTopics');
   const initStore = () => {
-    const defaultData = { users: [], admins: [], conversations: [], messages: [], topics: [], topic_comments: [], audit_logs: [], broadcasts: [] };
+    const defaultData = { users: [], admins: [], admin_assignments: [], conversations: [], messages: [], topics: [], topic_comments: [], audit_logs: [], broadcasts: [] };
     let data = defaultData;
     if (fs.existsSync(dbPath)) {
       try {
@@ -57,6 +57,7 @@ if (isVercel && !dbUrl) {
           data.platform_settings = { id: 'global', features: {} };
         }
         if (!data.users) data.users = [];
+        if (!data.admin_assignments) data.admin_assignments = [];
         data.users = data.users.map((u) => ({ ...u, pseudo: u.pseudo || u.anonymous_id, password_hash: u.password_hash || '', phone: u.phone || null, email: u.email || null, photo: u.photo || null }));
         data.admins = (data.admins || []).map((a) => ({ ...a, photo: a.photo || '' }));
       } catch {
@@ -210,8 +211,41 @@ if (isVercel && !dbUrl) {
           return { rows: [], rowCount: 0 };
         }
         data.admins.splice(idx, 1);
+        data.admin_assignments = (data.admin_assignments || []).filter((x) => x.admin_id !== id);
         save(data);
         return { rows: [{ id }], rowCount: 1 };
+      }
+      if (sql.includes('SELECT theme_key FROM admin_assignments WHERE admin_id')) {
+        const rows = (data.admin_assignments || [])
+          .filter((x) => x.admin_id === $1)
+          .map((x) => ({ theme_key: x.theme_key }))
+          .sort((a, b) => String(a.theme_key).localeCompare(String(b.theme_key)));
+        return { rows };
+      }
+      if (sql.includes('SELECT admin_id, theme_key FROM admin_assignments')) {
+        const rows = (data.admin_assignments || [])
+          .map((x) => ({ admin_id: x.admin_id, theme_key: x.theme_key }))
+          .sort((a, b) => String(a.admin_id).localeCompare(String(b.admin_id)) || String(a.theme_key).localeCompare(String(b.theme_key)));
+        return { rows };
+      }
+      if (sql.includes('DELETE FROM admin_assignments WHERE admin_id')) {
+        const before = (data.admin_assignments || []).length;
+        data.admin_assignments = (data.admin_assignments || []).filter((x) => x.admin_id !== $1);
+        save(data);
+        return { rows: [], rowCount: before - data.admin_assignments.length };
+      }
+      if (sql.includes('INSERT INTO admin_assignments')) {
+        const key = String($2 || '').toUpperCase();
+        data.admin_assignments = data.admin_assignments || [];
+        const exists = data.admin_assignments.some((x) => x.admin_id === $1 && x.theme_key === key);
+        if (!exists) data.admin_assignments.push({ admin_id: $1, theme_key: key, created_at: new Date().toISOString() });
+        save(data);
+        return { rows: [{ admin_id: $1, theme_key: key }], rowCount: exists ? 0 : 1 };
+      }
+      if (sql.includes('SELECT 1 FROM admin_assignments WHERE admin_id') && sql.includes('theme_key')) {
+        const key = String($2 || '').toUpperCase();
+        const exists = (data.admin_assignments || []).some((x) => x.admin_id === $1 && x.theme_key === key);
+        return { rows: exists ? [{}] : [] };
       }
 
       if (sql.includes('SELECT features FROM platform_settings WHERE id')) {

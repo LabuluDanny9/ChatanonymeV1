@@ -1,5 +1,5 @@
 /**
- * Paramètres administrateur — Profil, sécurité, préférences, restrictions plateforme (principal)
+ * Paramètres administrateur — Profil, sécurité, préférences, restrictions plateforme
  */
 
 import { useState, useEffect } from 'react';
@@ -123,7 +123,7 @@ export default function AdminSettings() {
         </form>
       </motion.div>
 
-      {/* Restrictions plateforme — visible par tous les admins, modifiable par le principal */}
+      {/* Restrictions plateforme — visible et modifiable par tous les admins */}
       {platform?.features && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -135,9 +135,8 @@ export default function AdminSettings() {
             <Globe className="w-5 h-5 text-admin-purple" /> Fonctionnalités de la plateforme
           </h2>
           <p className="text-sm text-admin-muted mb-6">
-            {platform.canEdit
-              ? 'Activez ou désactivez les fonctionnalités côté utilisateurs. Tous les administrateurs voient le même tableau de bord ; seuls ces réglages restent réservés au compte principal.'
-              : 'Seul l’administrateur principal peut modifier ces options. Vous pouvez consulter l’état actuel.'}
+            Activez ou désactivez les fonctionnalités côté utilisateurs. Tous les administrateurs
+            ont les mêmes possibilités d’action.
           </p>
           <div className="space-y-3">
             {[

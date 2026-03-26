@@ -10,6 +10,9 @@ const Topic = require('../models/Topic');
 const TopicComment = require('../models/TopicComment');
 const AuditLog = require('../models/AuditLog');
 const PlatformSettings = require('../models/PlatformSettings');
+const AdminAssignment = require('../models/AdminAssignment');
+const seedTopics = require('../scripts/seedTopics');
+const { parseThemeKeyFromContent } = require('../utils/themeUtils');
 const { pool } = require('../config/database');
 
 function getClientIp(req) {
@@ -19,6 +22,46 @@ function getClientIp(req) {
 function isPrimaryAdmin(req) {
   const expected = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
   return String(req?.admin?.email || '').toLowerCase() === expected;
+}
+
+async function getAvailableThemeKeys() {
+  const keys = new Set();
+  for (const t of seedTopics || []) {
+    const k = parseThemeKeyFromContent(t?.content);
+    if (k) keys.add(k);
+  }
+  try {
+    const { topics } = await Topic.findAll({ limit: 1000, offset: 0 });
+    for (const t of topics || []) {
+      const k = parseThemeKeyFromContent(t?.content);
+      if (k) keys.add(k);
+    }
+  } catch {
+    /* ignore */
+  }
+  return Array.from(keys).sort();
+}
+
+async function getConversationThemeKey(conversationId) {
+  const messages = await Message.findByConversationId(conversationId, true);
+  const withTopic = (messages || []).filter((m) => m.topic_id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const topicId = withTopic[0]?.topic_id;
+  if (!topicId) return null;
+  const topic = await Topic.findById(topicId);
+  if (!topic) return null;
+  return parseThemeKeyFromContent(topic.content);
+}
+
+async function ensureThemePermission(req, res, themeKey) {
+  if (!themeKey) return true;
+  if (isPrimaryAdmin(req)) return true;
+  const ok = await AdminAssignment.isAssignedToTheme(req.admin.id, themeKey);
+  if (ok) return true;
+  res.status(403).json({
+    error: `Vous n’êtes pas assigné à la thématique ${themeKey}.`,
+    themeKey,
+  });
+  return false;
 }
 
 // GET /api/admin/stats - Statistiques dashboard
@@ -72,11 +115,6 @@ async function listUsers(req, res, next) {
 // DELETE /api/admin/users/:id - Supprimer (soft) un utilisateur
 async function deleteUser(req, res, next) {
   try {
-    if (!isPrimaryAdmin(req)) {
-      return res.status(403).json({
-        error: 'Action réservée à l’administrateur principal.',
-      });
-    }
     const { id } = req.params;
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
@@ -215,6 +253,9 @@ async function replyToConversation(req, res, next) {
     if (!payload) return res.status(400).json({ error: 'Contenu requis' });
     const conv = await Conversation.findById(id);
     if (!conv) return res.status(404).json({ error: 'Conversation introuvable' });
+    const themeKey = await getConversationThemeKey(conv.id);
+    const canReply = await ensureThemePermission(req, res, themeKey);
+    if (!canReply) return;
     const message = await Message.create(
       conv.id, 'admin', req.admin.id,
       payload.content, payload.messageType, payload.metadata, payload.topicId
@@ -360,6 +401,10 @@ async function replyPrivateToComment(req, res, next) {
     }
     const comment = await TopicComment.findById(commentId);
     if (!comment) return res.status(404).json({ error: 'Commentaire introuvable' });
+    const topic = await Topic.findById(comment.topic_id);
+    const themeKey = parseThemeKeyFromContent(topic?.content);
+    const canReply = await ensureThemePermission(req, res, themeKey);
+    if (!canReply) return;
     const authorId = comment.author_id ?? comment.authorId;
     if (comment.author_type !== 'user' || !authorId || authorId === 'anonymous') {
       return res.status(400).json({ error: 'Impossible de répondre en privé à un commentaire anonyme' });
@@ -416,10 +461,17 @@ async function updatePhoto(req, res, next) {
 async function listAdmins(req, res, next) {
   try {
     const admins = await Admin.findAll();
+    const assignments = await AdminAssignment.findAll();
+    const map = new Map();
+    for (const a of assignments || []) {
+      if (!map.has(a.admin_id)) map.set(a.admin_id, []);
+      map.get(a.admin_id).push(a.theme_key);
+    }
     const primaryEmail = String(process.env.PRIMARY_ADMIN_EMAIL || 'labuludanny9@gmail.com').toLowerCase();
     const withFlags = admins.map((a) => ({
       ...a,
       isPrimaryAdmin: String(a.email || '').toLowerCase() === primaryEmail,
+      assignedThemes: map.get(a.id) || [],
     }));
     return res.json({ admins: withFlags });
   } catch (err) {
@@ -446,13 +498,11 @@ async function getAdminMe(req, res, next) {
   }
 }
 
-// DELETE /api/admin/admins/:id — Supprimer un administrateur (principal uniquement)
+// DELETE /api/admin/admins/:id — Supprimer un administrateur
 async function deleteAdmin(req, res, next) {
   try {
     if (!isPrimaryAdmin(req)) {
-      return res.status(403).json({
-        error: 'Action réservée à l’administrateur principal.',
-      });
+      return res.status(403).json({ error: 'Action réservée à l’administrateur principal.' });
     }
     const { id } = req.params;
     if (id === req.admin.id) {
@@ -477,20 +527,15 @@ async function deleteAdmin(req, res, next) {
 async function getPlatformSettings(req, res, next) {
   try {
     const features = await PlatformSettings.getMerged();
-    return res.json({ features, canEdit: isPrimaryAdmin(req) });
+    return res.json({ features, canEdit: true });
   } catch (err) {
     next(err);
   }
 }
 
-// PATCH /api/admin/platform-settings — Mise à jour (principal uniquement)
+// PATCH /api/admin/platform-settings — Mise à jour (tous les admins)
 async function patchPlatformSettings(req, res, next) {
   try {
-    if (!isPrimaryAdmin(req)) {
-      return res.status(403).json({
-        error: 'Seul l’administrateur principal peut modifier ces paramètres.',
-      });
-    }
     const body = req.body?.features || req.body || {};
     const allowed = {};
     for (const key of Object.keys(PlatformSettings.DEFAULT_FEATURES)) {
@@ -506,13 +551,11 @@ async function patchPlatformSettings(req, res, next) {
   }
 }
 
-// POST /api/admin/admins - Créer un administrateur (administrateur principal uniquement)
+// POST /api/admin/admins - Créer un administrateur (principal uniquement)
 async function createAdmin(req, res, next) {
   try {
     if (!isPrimaryAdmin(req)) {
-      return res.status(403).json({
-        error: 'Seul l’administrateur principal peut ajouter des administrateurs.',
-      });
+      return res.status(403).json({ error: 'Action réservée à l’administrateur principal.' });
     }
     const bcrypt = require('bcryptjs');
     const { email, password } = req.body || {};
@@ -532,6 +575,38 @@ async function createAdmin(req, res, next) {
     return res.status(201).json({
       admin: { id: admin.id, email: admin.email, photo: admin.photo, created_at: admin.created_at },
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/admin/themes - Liste des thématiques disponibles
+async function listThemes(req, res, next) {
+  try {
+    const themes = await getAvailableThemeKeys();
+    return res.json({ themes });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/admin/admins/:id/assignments - Assigner des thématiques (principal uniquement)
+async function updateAdminAssignments(req, res, next) {
+  try {
+    if (!isPrimaryAdmin(req)) {
+      return res.status(403).json({ error: 'Action réservée à l’administrateur principal.' });
+    }
+    const { id } = req.params;
+    const admin = await Admin.findById(id);
+    if (!admin) return res.status(404).json({ error: 'Administrateur introuvable' });
+    const requested = Array.isArray(req.body?.themes) ? req.body.themes : [];
+    const available = new Set(await getAvailableThemeKeys());
+    const selected = requested
+      .map((k) => String(k || '').trim().toUpperCase())
+      .filter((k) => available.has(k));
+    const assignedThemes = await AdminAssignment.replaceForAdmin(id, selected);
+    await AuditLog.create(req.admin.id, 'admin.assignments', 'admin', id, { assignedThemes }, getClientIp(req));
+    return res.json({ adminId: id, assignedThemes });
   } catch (err) {
     next(err);
   }
@@ -558,6 +633,8 @@ module.exports = {
   updatePhoto,
   listAdmins,
   createAdmin,
+  listThemes,
+  updateAdminAssignments,
   getAdminMe,
   deleteAdmin,
   getPlatformSettings,

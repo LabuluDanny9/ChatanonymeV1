@@ -33,5 +33,7 @@ router.put('/photo', adminController.updatePhoto);
 router.get('/admins', adminController.listAdmins);
 router.post('/admins', adminController.createAdmin);
 router.delete('/admins/:id', adminController.deleteAdmin);
+router.get('/themes', adminController.listThemes);
+router.put('/admins/:id/assignments', adminController.updateAdminAssignments);
 
 module.exports = router;
