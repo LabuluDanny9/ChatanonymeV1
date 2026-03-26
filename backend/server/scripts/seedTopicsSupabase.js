@@ -6,8 +6,6 @@
 const defaultTopics = require('./seedTopics');
 
 async function seedTopicsIfNeeded(pool) {
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM topics');
-  if (rows[0].count >= 3) return;
   const existing = await pool.query('SELECT title FROM topics');
   const titles = existing.rows.map((r) => r.title);
   for (const t of defaultTopics) {

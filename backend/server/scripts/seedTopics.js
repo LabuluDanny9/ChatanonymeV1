@@ -148,6 +148,78 @@ L’amitié se construit. Quelques idées pour démarrer :
 
 Qu’est-ce que vous aimez partager avec les autres ?`,
   },
+  {
+    title: 'Finance personnelle : mieux gérer son budget',
+    content: `#theme:FINANCE|Budget & Epargne
+Parler d’argent peut soulager beaucoup de stress quand on s’organise simplement :
+
+• Notez vos dépenses fixes et variables pendant 30 jours.
+• Commencez une épargne même petite, mais régulière.
+• Évitez les décisions impulsives : attendez 24h avant un achat non essentiel.
+• Fixez un objectif concret (facture, projet, sécurité).
+
+Partagez vos astuces pour tenir un budget sans culpabilité.`,
+  },
+  {
+    title: 'Entrepreneuriat : lancer un projet sans se brûler',
+    content: `#theme:BUSINESS|Entrepreneuriat
+Créer un projet demande de l’énergie, mais aussi du cadre :
+
+• Clarifiez votre problème à résoudre en une phrase.
+• Testez vite avec une version simple avant d’investir trop.
+• Demandez des retours réels, pas seulement des encouragements.
+• Protégez votre rythme : repos et priorités hebdomadaires.
+
+Où en êtes-vous dans votre idée en ce moment ?`,
+  },
+  {
+    title: 'Développement web : progresser étape par étape',
+    content: `#theme:INFORMATIQUE|Developpement Web
+Si vous débutez, avancez par petites briques :
+
+• HTML/CSS pour comprendre la structure et le style.
+• JavaScript pour la logique et les interactions.
+• Un mini-projet par compétence (formulaire, todo, API simple).
+• Lire et corriger ses erreurs : c’est une vraie compétence.
+
+Posez vos questions techniques, on peut décortiquer ensemble.`,
+  },
+  {
+    title: 'Relations familiales : communiquer sans blesser',
+    content: `#theme:FAMILLE|Communication
+Les tensions familiales sont fréquentes, surtout en période de fatigue :
+
+• Parlez des faits avant les jugements.
+• Utilisez “je ressens” plutôt que “tu fais toujours”.
+• Choisissez le bon moment pour discuter, pas à chaud.
+• Fixez des limites claires et respectueuses.
+
+Qu’est-ce qui vous aide à retrouver un dialogue apaisé ?`,
+  },
+  {
+    title: 'Carrière : trouver sa voie professionnelle',
+    content: `#theme:CARRIERE|Orientation
+Quand on hésite sur son avenir, il faut tester plutôt que rester bloqué :
+
+• Listez vos forces, pas seulement vos diplômes.
+• Parlez à des personnes déjà dans les métiers qui vous attirent.
+• Faites des essais courts (stages, missions, projets personnels).
+• Revoyez votre cap tous les 3 mois.
+
+Sur quoi voulez-vous avancer cette semaine ?`,
+  },
+  {
+    title: 'Vie étudiante : méthode et motivation durable',
+    content: `#theme:EDUCATION|Vie Etudiante
+Étudier longtemps sans s’épuiser demande une stratégie :
+
+• Fractionnez le travail en blocs de 25 à 45 minutes.
+• Révisez par répétition espacée plutôt qu’en une seule fois.
+• Dormez suffisamment : la mémoire en dépend.
+• Cherchez un groupe de soutien, même petit.
+
+Quelle méthode vous aide le plus à rester régulier ?`,
+  },
 ];
 
 module.exports = defaultTopics;
