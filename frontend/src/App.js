@@ -9,6 +9,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { NotificationProvider } from './context/NotificationContext';
 import NotificationSocketListener from './components/NotificationSocketListener';
 import ErrorBoundary from './components/ErrorBoundary';
+import LaunchOverlay from './components/LaunchOverlay';
 
 import Welcome from './pages/Welcome';
 import AuthPage from './pages/AuthPage';
@@ -97,6 +98,7 @@ export default function App() {
               <NotificationProvider>
                 <NotificationSocketListener />
                 <AppRoutes />
+                <LaunchOverlay />
               </NotificationProvider>
             </ToastProvider>
           </ThemeProvider>

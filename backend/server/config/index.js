@@ -26,18 +26,30 @@ module.exports = {
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 100,
   },
   cors: {
-    // Sur Vercel : accepte *.vercel.app automatiquement (front + API même domaine)
+    // Sur Vercel : accepte *.vercel.app + apps Capacitor (WebView : https://localhost, capacitor://…)
     // CORS_ORIGIN : URL exacte ou plusieurs séparées par des virgules
     origin: (() => {
       const env = process.env.CORS_ORIGIN || 'http://localhost:3000';
       const origins = env.split(',').map((o) => o.trim()).filter(Boolean).filter((o) => o.startsWith('http'));
-      if (process.env.VERCEL) {
-        return (origin, cb) => {
-          const ok = !origin || origins.includes(origin) || (origin && origin.endsWith('.vercel.app'));
-          cb(null, ok ? (origin || true) : false);
-        };
-      }
-      return origins.length ? (origins.length === 1 ? origins[0] : origins) : 'http://localhost:3000';
+
+      const isCapacitorLike = (origin) => {
+        if (!origin || typeof origin !== 'string') return false;
+        if (origin === 'https://localhost' || origin === 'http://localhost') return true;
+        if (origin.startsWith('capacitor://') || origin.startsWith('ionic://')) return true;
+        return false;
+      };
+
+      const allow = (origin) => {
+        if (!origin) return true;
+        if (origins.includes(origin)) return true;
+        if (process.env.VERCEL && origin.endsWith('.vercel.app')) return true;
+        if (isCapacitorLike(origin)) return true;
+        return false;
+      };
+
+      return (origin, cb) => {
+        cb(null, allow(origin) ? true : false);
+      };
     })(),
   },
   whatsapp: {

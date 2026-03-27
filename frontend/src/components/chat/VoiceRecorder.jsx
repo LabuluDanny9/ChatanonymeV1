@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { motion } from 'framer-motion';
 import { Mic, Square, Play, Pause, Send, X } from 'lucide-react';
 import api, { getApiBaseUrl, ensureAuthToken } from '../../lib/api';
@@ -164,8 +165,13 @@ export default function VoiceRecorder({
     } catch (err) {
       setRequestingMic(false);
       console.error('Erreur micro:', err);
+      const isNative = Capacitor.isNativePlatform();
       if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
-        toast.error('Micro refusé. Autorisez l’accès au microphone dans les paramètres du navigateur.');
+        toast.error(
+          isNative
+            ? 'Micro refusé. Ouvrez les paramètres Android → Applications → ChatAnonyme → Autorisations, puis activez le microphone.'
+            : 'Micro refusé. Autorisez l’accès au microphone dans les paramètres du navigateur.',
+        );
       } else if (err?.name === 'NotFoundError') {
         toast.error('Aucun microphone détecté.');
       } else {

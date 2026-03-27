@@ -3,10 +3,22 @@
  */
 
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from './supabase';
 
+/** API publique (Vercel) — secours si le build natif n’a pas REACT_APP_API_URL */
+const PRODUCTION_API_FALLBACK = 'https://chatanonyme-v1.vercel.app';
+
 // En dev sans URL : proxy (package.json). Sinon REACT_APP_API_URL.
-const API_URL = process.env.REACT_APP_API_URL || '';
+// Sur Capacitor, sans variable, les requêtes partaient vers capacitor:// → échec ; on force l’API HTTPS.
+const API_URL = (() => {
+  const fromEnv = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+  if (fromEnv) return fromEnv;
+  if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+    return PRODUCTION_API_FALLBACK;
+  }
+  return '';
+})();
 
 export const getApiBaseUrl = () => api.defaults.baseURL || API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 

@@ -1,0 +1,14 @@
+{
+  "name": "chatanonyme-electron",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Version desktop Electron de ChatAnonyme",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
+  }
+}
+
