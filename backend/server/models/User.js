@@ -90,6 +90,21 @@ const User = {
   async ban(id) {
     return this.updateStatus(id, 'banned');
   },
+
+  /** Recherche d’utilisateurs actifs par pseudo (messagerie entre utilisateurs) */
+  async searchActiveByPseudo(substring, excludeUserId, limit = 20) {
+    const needle = String(substring || '').trim();
+    if (needle.length < 2) return [];
+    const pattern = `%${needle}%`;
+    const { rows } = await pool.query(
+      `/* peer_user_search */
+       SELECT id, pseudo, photo FROM users
+       WHERE status = 'active' AND id != $1 AND LOWER(pseudo) LIKE LOWER($2)
+       ORDER BY pseudo ASC LIMIT $3`,
+      [excludeUserId, pattern, limit]
+    );
+    return rows;
+  },
 };
 
 module.exports = User;

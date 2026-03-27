@@ -7,6 +7,8 @@ const { pool } = require('../config/database');
 const DEFAULT_FEATURES = {
   forum: true,
   privateChat: true,
+  /** Messagerie directe entre deux utilisateurs (style WhatsApp), distincte du chat avec l’équipe */
+  userToUserChat: false,
   broadcasts: true,
   registrations: true,
 };

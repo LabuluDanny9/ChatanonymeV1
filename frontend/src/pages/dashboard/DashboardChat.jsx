@@ -3,7 +3,7 @@
  * Interface conversation utilisateur — layout optimisé
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Send, Mic, Paperclip, Smile, Shield } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -12,8 +12,9 @@ import { io } from 'socket.io-client';
 import ChatBubble from '../../components/ChatBubble';
 import VoiceRecorder from '../../components/chat/VoiceRecorder';
 import AttachmentPicker from '../../components/chat/AttachmentPicker';
-import EmojiPicker from 'emoji-picker-react';
 import { useToast } from '../../context/ToastContext';
+
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
 import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../../lib/socketConfig';
 
@@ -430,13 +431,21 @@ export default function DashboardChat() {
               exit={{ opacity: 0, y: 8 }}
               className="absolute bottom-full left-4 right-4 sm:left-auto sm:right-4 sm:w-[320px] mb-2 z-50"
             >
-              <EmojiPicker
-                onEmojiClick={(d) => handleEmojiSelect(d.emoji)}
-                theme="dark"
-                width={320}
-                height={320}
-                previewConfig={{ showPreview: false }}
-              />
+              <Suspense
+                fallback={
+                  <div className="h-[280px] sm:h-[320px] rounded-xl bg-app-card border border-app-border flex items-center justify-center text-app-muted text-sm">
+                    Chargement des emojis…
+                  </div>
+                }
+              >
+                <EmojiPicker
+                  onEmojiClick={(d) => handleEmojiSelect(d.emoji)}
+                  theme="dark"
+                  width={320}
+                  height={300}
+                  previewConfig={{ showPreview: false }}
+                />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

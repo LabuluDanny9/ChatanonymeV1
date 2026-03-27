@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
   MessageCircle,
+  Users,
   FileText,
   History,
   Bell,
@@ -29,6 +30,7 @@ import { usePlatformFeatures } from '../../hooks/usePlatformFeatures';
 const baseNavItems = [
   { to: '/dashboard', icon: Home, label: 'Accueil' },
   { to: '/dashboard/chat', icon: MessageCircle, label: 'Messages', needsPrivateChat: true },
+  { to: '/dashboard/users-chat', icon: Users, label: 'Entre utilisateurs', needsUserToUserChat: true },
   { to: '/dashboard/topics', icon: FileText, label: 'Forum', needsForum: true },
   { to: '/dashboard/history', icon: History, label: 'Historique' },
   { to: '/dashboard/profile', icon: User, label: 'Profil' },
@@ -45,9 +47,10 @@ export default function UserDashboardLayout() {
       baseNavItems.filter((item) => {
         if (item.needsForum && features.forum === false) return false;
         if (item.needsPrivateChat && features.privateChat === false) return false;
+        if (item.needsUserToUserChat && features.userToUserChat !== true) return false;
         return true;
       }),
-    [features.forum, features.privateChat]
+    [features.forum, features.privateChat, features.userToUserChat]
   );
 
   useEffect(() => {
@@ -57,7 +60,10 @@ export default function UserDashboardLayout() {
     if (features.privateChat === false && location.pathname.startsWith('/dashboard/chat')) {
       navigate('/dashboard', { replace: true });
     }
-  }, [features.forum, features.privateChat, location.pathname, navigate]);
+    if (features.userToUserChat !== true && location.pathname.startsWith('/dashboard/users-chat')) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [features.forum, features.privateChat, features.userToUserChat, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -75,7 +81,7 @@ export default function UserDashboardLayout() {
   return (
     <div className="flex min-h-screen bg-app-bg text-app-text font-sans">
       {/* Sidebar — Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 z-40 bg-app-surface/80 backdrop-blur-sm border-r border-app-border">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 z-40 bg-app-surface/95 lg:bg-app-surface/80 lg:backdrop-blur-sm border-r border-app-border">
         <div className="flex items-center gap-3 px-6 py-4 border-b border-app-border">
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-app-blue to-app-purple flex items-center justify-center shadow-app-glow">
@@ -159,7 +165,7 @@ export default function UserDashboardLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-sm"
+              className="lg:hidden fixed inset-0 bg-black/55 z-40"
             />
             <motion.aside
               initial={{ x: -280 }}
@@ -200,7 +206,7 @@ export default function UserDashboardLayout() {
       {/* Main */}
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         {/* Topbar mobile */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-app-surface/80 backdrop-blur-sm border-b border-app-border">
+        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-app-surface border-b border-app-border">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -243,7 +249,7 @@ export default function UserDashboardLayout() {
         </main>
 
         {/* Bottom nav — Mobile */}
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-app-surface/95 backdrop-blur-sm border-t border-app-border">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-app-surface border-t border-app-border pb-safe">
           <div className="flex justify-around py-2">
             {navItems.map((item) => (
               <Link

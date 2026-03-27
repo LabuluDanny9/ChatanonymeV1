@@ -1,7 +1,9 @@
 /**
  * ChatAnonyme - Application React
+ * Routes en lazy loading pour réduire le JS initial (fluidité sur mobile / WebView)
  */
 
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -10,33 +12,35 @@ import { NotificationProvider } from './context/NotificationContext';
 import NotificationSocketListener from './components/NotificationSocketListener';
 import ErrorBoundary from './components/ErrorBoundary';
 import LaunchOverlay from './components/LaunchOverlay';
+import PageLoader from './components/PageLoader';
 
-import Welcome from './pages/Welcome';
-import AuthPage from './pages/AuthPage';
-import Topics from './pages/Topics';
-import TopicView from './pages/TopicView';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminConversations from './pages/admin/AdminConversations';
-import AdminTopics from './pages/admin/AdminTopics';
-import AdminReports from './pages/admin/AdminReports';
-import AdminSettings from './pages/admin/AdminSettings';
-import AdminAdmins from './pages/admin/AdminAdmins';
-import AdminMessageHistory from './pages/admin/AdminMessageHistory';
-import Layout from './components/Layout';
-import AdminLayout from './components/admin/AdminLayout';
-import UserDashboardLayout from './components/dashboard/UserDashboardLayout';
-import DashboardHome from './pages/dashboard/DashboardHome';
-import DashboardChat from './pages/dashboard/DashboardChat';
-import DashboardTopics from './pages/dashboard/DashboardTopics';
-import DashboardHistory from './pages/dashboard/DashboardHistory';
-import DashboardProfile from './pages/dashboard/DashboardProfile';
-import DashboardSettings from './pages/dashboard/DashboardSettings';
+const Welcome = lazy(() => import('./pages/Welcome'));
+const AuthPage = lazy(() => import('./pages/AuthPage'));
+const Topics = lazy(() => import('./pages/Topics'));
+const TopicView = lazy(() => import('./pages/TopicView'));
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminConversations = lazy(() => import('./pages/admin/AdminConversations'));
+const AdminTopics = lazy(() => import('./pages/admin/AdminTopics'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminAdmins = lazy(() => import('./pages/admin/AdminAdmins'));
+const AdminMessageHistory = lazy(() => import('./pages/admin/AdminMessageHistory'));
+const Layout = lazy(() => import('./components/Layout'));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
+const UserDashboardLayout = lazy(() => import('./components/dashboard/UserDashboardLayout'));
+const DashboardHome = lazy(() => import('./pages/dashboard/DashboardHome'));
+const DashboardChat = lazy(() => import('./pages/dashboard/DashboardChat'));
+const DashboardTopics = lazy(() => import('./pages/dashboard/DashboardTopics'));
+const DashboardHistory = lazy(() => import('./pages/dashboard/DashboardHistory'));
+const DashboardProfile = lazy(() => import('./pages/dashboard/DashboardProfile'));
+const DashboardSettings = lazy(() => import('./pages/dashboard/DashboardSettings'));
+const DashboardPeerChat = lazy(() => import('./pages/dashboard/DashboardPeerChat'));
 
 function PrivateUser({ children }) {
   const { user, admin, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (loading) return <PageLoader />;
   if (admin) return <Navigate to="/admin/dashboard" replace />;
   if (!user) return <Navigate to="/connexion" replace />;
   return children;
@@ -44,13 +48,14 @@ function PrivateUser({ children }) {
 
 function PrivateAdmin({ children }) {
   const { isAdmin, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (loading) return <PageLoader />;
   if (!isAdmin) return <Navigate to="/admin" replace />;
   return children;
 }
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/connexion" element={<AuthPage mode="user" defaultTab="login" />} />
       <Route path="/inscription" element={<AuthPage mode="user" defaultTab="signup" />} />
@@ -62,6 +67,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<PrivateUser><UserDashboardLayout /></PrivateUser>}>
           <Route index element={<DashboardHome />} />
           <Route path="chat" element={<DashboardChat />} />
+          <Route path="users-chat" element={<DashboardPeerChat />} />
           <Route path="topics" element={<DashboardTopics />} />
           <Route path="topics/:id" element={<TopicView />} />
           <Route path="history" element={<DashboardHistory />} />
@@ -85,6 +91,7 @@ function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

@@ -69,6 +69,13 @@ html {
   height: -webkit-fill-available;
 }
 
+/* Mobile / WebView : scroll programmatique = moins de saccades que smooth sur longues pages */
+@media (max-width: 1024px) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
   font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
@@ -87,6 +94,15 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
   /* Réduit le double-tap zoom involontaire sur Android */
   touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  body {
+    transition: none;
+  }
 }
 
 #root {

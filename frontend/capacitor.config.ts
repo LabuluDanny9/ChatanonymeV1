@@ -6,6 +6,8 @@ const config: CapacitorConfig = {
   appId: 'com.chatanonyme.app',
   appName: 'ChatAnonyme',
   webDir: 'build',
+  /** Évite un flash blanc derrière le WebView (Android) */
+  backgroundColor: '#f8fafc',
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,

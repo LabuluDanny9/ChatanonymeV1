@@ -18,6 +18,7 @@ import { SOCKET_API_URL, getSocketOptions, WS_ENABLED } from '../lib/socketConfi
 const DEFAULT_FEATURES = {
   forum: true,
   privateChat: true,
+  userToUserChat: false,
   broadcasts: true,
   registrations: true,
 };

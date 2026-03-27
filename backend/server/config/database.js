@@ -47,7 +47,19 @@ if (isVercel && !dbUrl) {
 
   const seedTopics = require('../scripts/seedTopics');
   const initStore = () => {
-    const defaultData = { users: [], admins: [], admin_assignments: [], conversations: [], messages: [], topics: [], topic_comments: [], audit_logs: [], broadcasts: [] };
+    const defaultData = {
+      users: [],
+      admins: [],
+      admin_assignments: [],
+      conversations: [],
+      messages: [],
+      peer_conversations: [],
+      peer_messages: [],
+      topics: [],
+      topic_comments: [],
+      audit_logs: [],
+      broadcasts: [],
+    };
     let data = defaultData;
     if (fs.existsSync(dbPath)) {
       try {
@@ -58,6 +70,8 @@ if (isVercel && !dbUrl) {
         }
         if (!data.users) data.users = [];
         if (!data.admin_assignments) data.admin_assignments = [];
+        if (!data.peer_conversations) data.peer_conversations = [];
+        if (!data.peer_messages) data.peer_messages = [];
         data.users = data.users.map((u) => ({ ...u, pseudo: u.pseudo || u.anonymous_id, password_hash: u.password_hash || '', phone: u.phone || null, email: u.email || null, photo: u.photo || null }));
         data.admins = (data.admins || []).map((a) => ({ ...a, photo: a.photo || '' }));
       } catch {
@@ -267,6 +281,109 @@ if (isVercel && !dbUrl) {
         data.platform_settings.updated_at = new Date().toISOString();
         save(data);
         return { rows: [{ id: 'global', features: data.platform_settings.features }] };
+      }
+
+      if (sql.includes('peer_user_search')) {
+        const exclude = $1;
+        const raw = String($2 || '');
+        const needle = raw.replace(/%/g, '').toLowerCase();
+        const lim = Math.min(parseInt($3, 10) || 20, 50);
+        const rows = data.users
+          .filter(
+            (u) =>
+              u.id !== exclude &&
+              u.status === 'active' &&
+              u.pseudo &&
+              String(u.pseudo).toLowerCase().includes(needle)
+          )
+          .sort((a, b) => String(a.pseudo).localeCompare(String(b.pseudo), 'fr'))
+          .slice(0, lim)
+          .map((u) => ({ id: u.id, pseudo: u.pseudo, photo: u.photo || null }));
+        return { rows };
+      }
+
+      if (sql.includes('PEER_CONV_LIST_V1')) {
+        const me = $1;
+        const pcs = (data.peer_conversations || []).filter((pc) => pc.user_a === me || pc.user_b === me);
+        const rows = pcs
+          .map((pc) => {
+            const otherId = pc.user_a === me ? pc.user_b : pc.user_a;
+            const ou = data.users.find((u) => u.id === otherId);
+            const msgs = (data.peer_messages || [])
+              .filter((m) => m.conversation_id === pc.id && !m.deleted_at)
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const last = msgs[0];
+            return {
+              id: pc.id,
+              user_a: pc.user_a,
+              user_b: pc.user_b,
+              updated_at: pc.updated_at,
+              other_user_id: otherId,
+              other_pseudo: ou?.pseudo,
+              other_photo: ou?.photo ?? null,
+              last_message_content: last?.content ?? null,
+              last_message_at: last?.created_at ?? null,
+            };
+          })
+          .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        return { rows };
+      }
+
+      if (sql.includes('FROM peer_conversations WHERE user_a = $1 AND user_b = $2')) {
+        const rows = (data.peer_conversations || []).filter((pc) => pc.user_a === $1 && pc.user_b === $2);
+        return { rows: rows.slice(0, 1) };
+      }
+      if (sql.includes('INSERT INTO peer_conversations')) {
+        const id = uuid();
+        const row = {
+          id,
+          user_a: $1,
+          user_b: $2,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        data.peer_conversations.push(row);
+        save(data);
+        return { rows: [row] };
+      }
+      if (sql.includes('FROM peer_conversations WHERE id = $1') && !sql.includes('peer_messages')) {
+        const rows = (data.peer_conversations || []).filter((pc) => pc.id === $1);
+        return { rows: rows.slice(0, 1) };
+      }
+      if (sql.includes('UPDATE peer_conversations SET updated_at')) {
+        const pc = (data.peer_conversations || []).find((x) => x.id === $1);
+        if (pc) pc.updated_at = new Date().toISOString();
+        save(data);
+        return { rows: pc ? [pc] : [] };
+      }
+
+      if (sql.includes('INSERT INTO peer_messages')) {
+        const id = uuid();
+        let meta = {};
+        try {
+          meta = typeof $5 === 'string' ? JSON.parse($5) : ($5 || {});
+        } catch {
+          meta = {};
+        }
+        const row = {
+          id,
+          conversation_id: $1,
+          sender_id: $2,
+          content: $3 ?? '',
+          message_type: $4 || 'text',
+          metadata: meta,
+          deleted_at: null,
+          created_at: new Date().toISOString(),
+        };
+        data.peer_messages.push(row);
+        save(data);
+        return { rows: [row] };
+      }
+      if (sql.includes('FROM peer_messages') && sql.includes('conversation_id = $1') && sql.includes('deleted_at IS NULL')) {
+        const rows = (data.peer_messages || [])
+          .filter((m) => m.conversation_id === $1 && !m.deleted_at)
+          .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        return { rows };
       }
 
       if (sql.includes('SELECT * FROM conversations WHERE user_id')) {

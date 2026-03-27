@@ -141,7 +141,12 @@ export default function AdminSettings() {
           <div className="space-y-3">
             {[
               { key: 'forum', label: 'Forum (sujets et commentaires)', desc: 'Accès public aux sujets' },
-              { key: 'privateChat', label: 'Messages privés', desc: 'Chat utilisateur avec l’équipe' },
+              { key: 'privateChat', label: 'Messages avec l’équipe', desc: 'Chat privé utilisateur ↔ administration' },
+              {
+                key: 'userToUserChat',
+                label: 'Messages entre utilisateurs',
+                desc: 'Discussions directes entre deux comptes (style WhatsApp), distinctes du chat avec l’équipe',
+              },
               { key: 'broadcasts', label: 'Messages collectifs', desc: 'Annonces reçues dans l’espace utilisateur' },
               { key: 'registrations', label: 'Inscriptions', desc: 'Création de nouveaux comptes utilisateurs' },
             ].map(({ key, label, desc }) => (

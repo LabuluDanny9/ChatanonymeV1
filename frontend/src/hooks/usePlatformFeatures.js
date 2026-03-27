@@ -8,6 +8,7 @@ import api from '../lib/api';
 export const DEFAULT_PLATFORM_FEATURES = {
   forum: true,
   privateChat: true,
+  userToUserChat: false,
   broadcasts: true,
   registrations: true,
 };

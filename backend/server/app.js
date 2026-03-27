@@ -19,6 +19,7 @@ const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const topicRoutes = require('./routes/topicRoutes');
 const broadcastRoutes = require('./routes/broadcastRoutes');
+const peerRoutes = require('./routes/peerRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const configController = require('./controllers/configController');
 const uploadRoutes = require('./routes/uploadRoutes');
@@ -133,6 +134,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/broadcasts', broadcastRoutes);
+app.use('/api/peers', peerRoutes);
 app.use('/api/admin', adminRoutes);
 
 // 404

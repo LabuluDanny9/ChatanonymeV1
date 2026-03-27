@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 
-const OVERLAY_MS = 1650;
+const OVERLAY_MS_DEFAULT = 1650;
+const OVERLAY_MS_FAST = 420;
 
 export default function LaunchOverlay() {
   const [visible, setVisible] = useState(() => Capacitor.isNativePlatform());
@@ -15,12 +16,16 @@ export default function LaunchOverlay() {
   useLayoutEffect(() => {
     if (!Capacitor.isNativePlatform()) return undefined;
 
+    const reduced =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const overlayMs = reduced ? OVERLAY_MS_FAST : OVERLAY_MS_DEFAULT;
+
     let cancelled = false;
     let innerRaf = 0;
 
     const hideNative = async () => {
       try {
-        await SplashScreen.hide({ fadeOutDuration: 220 });
+        await SplashScreen.hide({ fadeOutDuration: reduced ? 120 : 220 });
       } catch {
         /* plugin absent ou web */
       }
@@ -34,7 +39,7 @@ export default function LaunchOverlay() {
 
     const t = window.setTimeout(() => {
       if (!cancelled) setVisible(false);
-    }, OVERLAY_MS);
+    }, overlayMs);
 
     return () => {
       cancelled = true;
@@ -71,15 +76,17 @@ export default function LaunchOverlay() {
             src={`${process.env.PUBLIC_URL || ''}/logo.png`}
             alt=""
             aria-hidden
-            initial={{ scale: 0.82, opacity: 0.65 }}
-            animate={{
-              scale: [0.82, 1.06, 1],
-              opacity: 1,
-            }}
-            transition={{
-              duration: 1.15,
-              ease: [0.22, 1, 0.36, 1],
-            }}
+            initial={{ scale: 0.94, opacity: 0.85 }}
+            animate={
+              typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? { scale: 1, opacity: 1 }
+                : { scale: [0.82, 1.06, 1], opacity: 1 }
+            }
+            transition={
+              typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? { duration: 0.2 }
+                : { duration: 1.15, ease: [0.22, 1, 0.36, 1] }
+            }
             style={{
               width: 'min(44vw, 200px)',
               height: 'auto',
@@ -87,19 +94,21 @@ export default function LaunchOverlay() {
               boxShadow: '0 24px 48px rgba(0,0,0,0.22)',
             }}
           />
-          <motion.div
-            aria-hidden
-            style={{
-              marginTop: 28,
-              width: 36,
-              height: 36,
-              border: '3px solid rgba(255,255,255,0.35)',
-              borderTopColor: 'rgba(255,255,255,0.95)',
-              borderRadius: '50%',
-            }}
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
-          />
+          {typeof window !== 'undefined' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && (
+            <motion.div
+              aria-hidden
+              style={{
+                marginTop: 28,
+                width: 36,
+                height: 36,
+                border: '3px solid rgba(255,255,255,0.35)',
+                borderTopColor: 'rgba(255,255,255,0.95)',
+                borderRadius: '50%',
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>
